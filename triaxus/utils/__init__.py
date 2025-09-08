@@ -6,4 +6,4 @@ This module contains utility functions and helpers for the TRIAXUS visualization
 
 from .html_generator import HTMLGenerator
 
-__all__ = ["HTMLGenerator"]
+__all__ = ['HTMLGenerator']

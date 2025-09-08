@@ -11,9 +11,9 @@ from .map_plot import MapPlotter
 from .plotter_factory import PlotterFactory
 
 __all__ = [
-    "TimeSeriesPlotter",
-    "DepthProfilePlotter",
-    "ContourPlotter",
-    "MapPlotter",
-    "PlotterFactory",
+    'TimeSeriesPlotter',
+    'DepthProfilePlotter', 
+    'ContourPlotter',
+    'MapPlotter',
+    'PlotterFactory'
 ]
