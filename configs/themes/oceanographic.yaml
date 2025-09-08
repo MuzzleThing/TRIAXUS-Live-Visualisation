@@ -1,0 +1,21 @@
+# Oceanographic Theme Configuration
+# Professional theme for oceanographic data visualization
+
+colors:
+  background: "#FAFAFA"
+  text: "#2F4F4F"
+  grid: "#B0C4DE"
+  primary: "#1976D2"
+  secondary: "#D32F2F"
+  accent: "#43A047"
+
+template: "plotly_white"
+
+variables:
+  tv290C: "#B73E3A"
+  flECO-AFL: "#1E88E5"
+  ph: "#43A047"
+  sbeox0Mm_L: "#7CB342"
+  sal00: "#8E24AA"
+
+description: "Professional oceanographic theme with subtle colors and clear contrast"

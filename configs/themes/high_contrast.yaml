@@ -1,0 +1,21 @@
+# High Contrast Theme Configuration
+# High contrast theme for accessibility
+
+colors:
+  background: "white"
+  text: "black"
+  grid: "black"
+  primary: "#FF0000"
+  secondary: "#0000FF"
+  accent: "#00FF00"
+
+template: "plotly_white"
+
+variables:
+  tv290C: "#FF0000"
+  flECO-AFL: "#00FF00"
+  ph: "#0000FF"
+  sbeox0Mm_L: "#FFFF00"
+  sal00: "#FF00FF"
+
+description: "High contrast theme for maximum accessibility and visibility"
