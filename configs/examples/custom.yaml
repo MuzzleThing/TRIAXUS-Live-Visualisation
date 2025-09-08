@@ -1,0 +1,55 @@
+# Custom Configuration Override for TRIAXUS
+# This file demonstrates how to override default settings
+# Only include the settings you want to change from default.yaml
+
+# Override plot dimensions (larger for presentations)
+plot:
+  default_width: 1200
+  default_height: 800
+  line:
+    default_width: 3
+  marker:
+    default_size: 6
+
+# Add a new custom theme
+colors:
+  themes:
+    custom_ocean:
+      background: "#F0F8FF"  # Alice Blue
+      grid: "#87CEEB"        # Sky Blue
+      text: "#191970"        # Midnight Blue
+      primary: "#006400"     # Dark Green
+      secondary: "#8B0000"   # Dark Red
+      accent: "#FF8C00"      # Dark Orange
+
+# Override map settings
+map:
+  default_style: "outdoors"
+  line:
+    width: 4
+    color: "#006400"
+  marker:
+    size: 10
+
+# Override font settings
+font:
+  family: "Times New Roman, serif"
+  size: 14
+  title_size: 16
+
+# Override annotation settings
+annotations:
+  font_size: 12
+  color: "navy"
+  border_width: 2
+  background_color: "lightyellow"
+  opacity: 0.9
+
+# Override data processing settings
+data:
+  sampling:
+    default_size: 2000
+    random_seed: 123
+  test_data:
+    default_hours: 4
+    default_points: 200
