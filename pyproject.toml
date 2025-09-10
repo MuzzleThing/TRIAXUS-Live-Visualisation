@@ -108,3 +108,7 @@ markers = [
     "integration: marks tests as integration tests",
     "unit: marks tests as unit tests",
 ]
+
+# Explicitly tell hatch which package to include in the wheel/editable build
+[tool.hatch.build.targets.wheel]
+packages = ["triaxus_backend"]

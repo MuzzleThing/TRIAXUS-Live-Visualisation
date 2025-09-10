@@ -5,18 +5,19 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from alembic import context
-import os
 import sys
 from pathlib import Path
 
-# Add the parent directory to sys.path so we can import our models
-sys.path.append(str(Path(__file__).parent.parent))
+# Ensure project root is on sys.path for absolute imports
+PROJECT_ROOT = str(Path(__file__).resolve().parents[2])
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
-from config.database import Base
-from config.settings import settings
+from triaxus_backend.database.base import Base
+from triaxus_backend.config.settings import settings
 
 # Import all models to ensure they are registered with Base
-from models import (
+from triaxus_backend.models import (
     cruise, file, sensor, cast, gps, qc, processed
 )
 

@@ -1,7 +1,7 @@
 """
 GPS tracking model for vessel and instrument positions.
 """
-from sqlalchemy import Column, BigInteger, DateTime, ForeignKey, Real, String, CheckConstraint, Index
+from sqlalchemy import Column, BigInteger, DateTime, ForeignKey, Float, String, CheckConstraint, Index
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from geoalchemy2 import Geography
@@ -51,13 +51,13 @@ class GpsTrack(BaseModel):
     
     # Navigation information
     heading = Column(
-        Real,
+        Float,
         nullable=True,
         comment="Heading in degrees"
     )
     
     speed = Column(
-        Real,
+        Float,
         nullable=True,
         comment="Speed in knots"
     )
@@ -70,8 +70,9 @@ class GpsTrack(BaseModel):
         comment="GPS status"
     )
     
-    # Additional metadata
-    metadata = Column(
+    # Additional metadata (SQLAlchemy reserves 'metadata'; keep column name, change attribute)
+    extra_metadata = Column(
+        'metadata',
         JSONB,
         nullable=True,
         comment="Additional GPS metadata"

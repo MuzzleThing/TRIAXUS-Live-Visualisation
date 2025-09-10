@@ -1,7 +1,7 @@
 """
 Quality control models for data validation and logging.
 """
-from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Text, func
+from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, BigInteger, Text, func, CheckConstraint, Index
 from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
 from sqlalchemy.orm import relationship
 import uuid

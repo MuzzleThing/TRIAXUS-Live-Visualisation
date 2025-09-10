@@ -28,13 +28,13 @@ class BaseModel(Base):
         """Convert model instance to dictionary."""
         return {
             column.name: getattr(self, column.name)
-            for column in self.__table__.columns
+            for column in self.__table__.columns.values()
         }
     
     def __repr__(self):
         """String representation of model."""
         attrs = []
-        for column in self.__table__.columns:
+        for column in self.__table__.columns.values():
             if hasattr(self, column.name):
                 value = getattr(self, column.name)
                 attrs.append(f"{column.name}={value!r}")

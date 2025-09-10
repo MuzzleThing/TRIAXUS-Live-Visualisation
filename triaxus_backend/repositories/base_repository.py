@@ -1,10 +1,10 @@
 """
 Base repository class with common database operations.
 """
-from typing import Generic, TypeVar, List, Optional, Dict, Any
+from typing import Generic, TypeVar, List, Optional, Dict, Any, Type
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy import func, and_, or_
+from sqlalchemy import func
 from uuid import UUID
 import logging
 
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class BaseRepository(Generic[T]):
     """Base repository with common CRUD operations."""
     
-    def __init__(self, model_class: T):
+    def __init__(self, model_class: Type[T]):
         self.model_class = model_class
     
     def create(self, db: Session, **kwargs) -> T:
@@ -39,8 +39,11 @@ class BaseRepository(Generic[T]):
         """Get record by ID."""
         try:
             # Get primary key column name
-            pk_column = list(self.model_class.__table__.primary_key.columns)[0]
-            return db.query(self.model_class).filter(pk_column == id_value).first()
+            pk_columns = list(self.model_class.__table__.primary_key.columns)
+            if pk_columns:
+                pk_column = pk_columns[0] 
+                return db.query(self.model_class).filter(pk_column == id_value).first()
+            return None
         except SQLAlchemyError as e:
             logger.error(f"Error getting {self.model_class.__name__} by ID {id_value}: {str(e)}")
             raise
@@ -88,7 +91,7 @@ class BaseRepository(Generic[T]):
     def count(self, db: Session, **filters) -> int:
         """Count records with optional filters."""
         try:
-            query = db.query(func.count(self.model_class.id))
+            # Use primary key for counting\n            pk_columns = list(self.model_class.__table__.primary_key.columns)\n            if pk_columns:\n                pk_column = pk_columns[0]\n                query = db.query(func.count(pk_column))\n            else:\n                query = db.query(func.count())"
             if filters:
                 query = self._apply_filters(query, **filters)
             return query.scalar()
