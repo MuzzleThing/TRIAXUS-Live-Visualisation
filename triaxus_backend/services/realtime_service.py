@@ -9,15 +9,15 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from uuid import UUID
 
-from triaxus_backend.config.settings import settings
-from triaxus_backend.config.database import get_db_context
-# from triaxus_backend.repositories.file_repository import FileRepository  # TODO: Create this module
-# from triaxus_backend.repositories.realtime_repository import RealtimeRepository  # TODO: Create this module
-from triaxus_backend.repositories.sensor_data_repository import SensorDataRepository
-from triaxus_backend.utils.cnv_parser import CNVParser
-from triaxus_backend.utils.hash_utils import HashUtils
-# from triaxus_backend.services.cast_detection_service import CastDetectionService  # TODO: Create this module
-# from triaxus_backend.services.qc_service import QualityControlService  # TODO: Create this module
+from ..config.settings import settings
+from ..config.database import get_db_context
+from ..repositories.file_repository import FileRepository
+from ..repositories.realtime_repository import RealtimeRepository
+from ..repositories.sensor_data_repository import SensorDataRepository
+from ..utils.cnv_parser import CNVParser
+from ..utils.hash_utils import HashUtils
+from .cast_detection_service import CastDetectionService
+from .qc_service import QualityControlService
 
 logger = logging.getLogger(__name__)
 
@@ -25,13 +25,13 @@ class RealtimeService:
     """Service for real-time data processing and monitoring."""
     
     def __init__(self):
-        # self.file_repository = FileRepository()  # TODO: Implement FileRepository
-        # self.realtime_repository = RealtimeRepository()  # TODO: Implement RealtimeRepository
+        self.file_repository = FileRepository()
+        self.realtime_repository = RealtimeRepository()
         self.sensor_data_repository = SensorDataRepository()
         self.cnv_parser = CNVParser()
         self.hash_utils = HashUtils()
-        # self.cast_detection_service = CastDetectionService()  # TODO: Implement CastDetectionService
-        # self.qc_service = QualityControlService()  # TODO: Implement QualityControlService
+        self.cast_detection_service = CastDetectionService()
+        self.qc_service = QualityControlService()
         self.file_positions: Dict[UUID, int] = {}  # Track file read positions
         self.is_running = False
     

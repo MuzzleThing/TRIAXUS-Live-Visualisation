@@ -6,13 +6,13 @@ import logging
 import sys
 from pathlib import Path
 
-# Add project root to path for absolute imports
-sys.path.append(str(Path(__file__).parent.parent.parent))
+# Add parent directory to path
+sys.path.append(str(Path(__file__).parent.parent))
 
 from sqlalchemy import text
-from triaxus_backend.config.database import engine, init_database
-from triaxus_backend.config.settings import settings
-from triaxus_backend.config.logging_config import setup_logging
+from config.database import engine, init_database
+from config.settings import settings
+from config.logging_config import setup_logging
 
 # Setup logging
 logger = setup_logging()

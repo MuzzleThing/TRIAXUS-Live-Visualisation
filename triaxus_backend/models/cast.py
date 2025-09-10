@@ -1,7 +1,7 @@
 """
 Cast model for managing CTD cast operations.
 """
-from sqlalchemy import Column, Integer, DateTime, ForeignKey, Float, String, Text, CheckConstraint, Index
+from sqlalchemy import Column, Integer, DateTime, ForeignKey, Real, String, Text, CheckConstraint, Index
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from geoalchemy2 import Geography
@@ -71,13 +71,13 @@ class Cast(BaseModel):
     
     # Depth information
     max_depth = Column(
-        Float,
+        Real,
         nullable=True,
         comment="Maximum depth reached in meters"
     )
     
     min_depth = Column(
-        Float,
+        Real,
         nullable=True,
         comment="Minimum depth reached in meters"
     )
@@ -103,9 +103,7 @@ class Cast(BaseModel):
         comment="Operator notes and comments"
     )
     
-    # 'metadata' is reserved in SQLAlchemy; use a safe attribute name while keeping the DB column as 'metadata'
-    extra_metadata = Column(
-        'metadata',
+    metadata = Column(
         JSONB,
         nullable=True,
         comment="Additional cast metadata"

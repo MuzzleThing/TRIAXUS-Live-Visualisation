@@ -60,9 +60,7 @@ class Cruise(BaseModel):
         comment="Detailed description of the cruise"
     )
     
-    # 'metadata' is reserved in SQLAlchemy; use a safe attribute name while keeping the DB column as 'metadata'
-    extra_metadata = Column(
-        'metadata',
+    metadata = Column(
         JSONB,
         nullable=True,
         comment="Additional cruise configuration and metadata"

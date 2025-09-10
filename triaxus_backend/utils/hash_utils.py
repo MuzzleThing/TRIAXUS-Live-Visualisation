@@ -25,7 +25,7 @@ class HashUtils:
             # Read file in chunks to handle large files
             with open(file_path, 'rb') as f:
                 while chunk := f.read(chunk_size):
-                    hash_algo.update(chunk)  # type: ignore[arg-type]
+                    hash_algo.update(chunk)
             
             return hash_algo.hexdigest()
             
@@ -38,7 +38,7 @@ class HashUtils:
         """Calculate hash of a string."""
         try:
             hash_algo = hashlib.new(algorithm)
-            hash_algo.update(text.encode('utf-8'))  # type: ignore[arg-type]
+            hash_algo.update(text.encode('utf-8'))
             return hash_algo.hexdigest()
         except Exception as e:
             logger.error(f"Error calculating string hash: {str(e)}")
@@ -71,7 +71,7 @@ class HashUtils:
                 if num_bytes is None:
                     # Read from start_byte to end of file
                     while chunk := f.read(8192):
-                        hash_algo.update(chunk)  # type: ignore[arg-type]
+                        hash_algo.update(chunk)
                 else:
                     # Read only specified number of bytes
                     bytes_read = 0
@@ -80,7 +80,7 @@ class HashUtils:
                         chunk = f.read(chunk_size)
                         if not chunk:
                             break
-                        hash_algo.update(chunk)  # type: ignore[arg-type]
+                        hash_algo.update(chunk)
                         bytes_read += len(chunk)
             
             return hash_algo.hexdigest()

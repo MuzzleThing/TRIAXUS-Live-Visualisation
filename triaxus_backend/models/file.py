@@ -1,7 +1,7 @@
 """
 Data file model for managing uploaded and processed files.
 """
-from sqlalchemy import Column, String, BigInteger, DateTime, ForeignKey, CheckConstraint, UniqueConstraint, func
+from sqlalchemy import Column, String, BigInteger, DateTime, ForeignKey, CheckConstraint, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 import uuid

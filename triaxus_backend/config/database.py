@@ -1,7 +1,7 @@
 """
 Database connection and session management.
 """
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import QueuePool
@@ -69,7 +69,7 @@ def init_database():
     if settings.TIMESCALEDB_ENABLED or settings.POSTGIS_ENABLED:
         with engine.connect() as conn:
             if settings.POSTGIS_ENABLED:
-                conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis;"))
+                conn.execute("CREATE EXTENSION IF NOT EXISTS postgis;")
             if settings.TIMESCALEDB_ENABLED:
-                conn.execute(text("CREATE EXTENSION IF NOT EXISTS timescaledb;"))
+                conn.execute("CREATE EXTENSION IF NOT EXISTS timescaledb;")
             conn.commit()

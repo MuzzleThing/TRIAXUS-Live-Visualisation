@@ -4,7 +4,7 @@ Repository for sensor data operations with time-series optimizations.
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_, desc, asc, Integer
+from sqlalchemy import func, and_, desc, asc
 from uuid import UUID
 import logging
 
@@ -88,7 +88,7 @@ class SensorDataRepository(BaseRepository[SensorData]):
             # Apply downsampling if requested
             if sample_rate:
                 # Use modulo on scan_number for simple downsampling
-                query = query.filter(func.mod(SensorData.scan_number, sample_rate) == 0)
+                query = query.filter(SensorData.scan_number % sample_rate == 0)
             
             return query.all()
         except Exception as e:
@@ -198,7 +198,7 @@ class SensorDataRepository(BaseRepository[SensorData]):
                 # Filter by QC flags in JSONB column
                 for variable, flag_value in qc_flag_filter.items():
                     query = query.filter(
-                        func.cast(SensorData.qc_flags[variable].astext, Integer) == flag_value
+                        SensorData.qc_flags[variable].astext.cast(Integer) == flag_value
                     )
             
             return query.order_by(asc(SensorData.timestamp)).all()

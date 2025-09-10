@@ -1,7 +1,7 @@
 """
 Sensor configuration and sensor data models.
 """
-from sqlalchemy import Column, String, Date, DateTime, ForeignKey, BigInteger, Float, CheckConstraint, Index, PrimaryKeyConstraint, func
+from sqlalchemy import Column, String, Date, DateTime, ForeignKey, BigInteger, Real, CheckConstraint, Index, PrimaryKeyConstraint, func
 from sqlalchemy.dialects.postgresql import UUID, JSONB, DOUBLE_PRECISION
 from sqlalchemy.orm import relationship
 import uuid
@@ -128,56 +128,56 @@ class SensorData(BaseModel):
     
     # Core CTD data
     pressure = Column(
-        Float,
+        Real,
         nullable=True,
         comment="Pressure in decibars"
     )
     
     temperature = Column(
-        Float,
+        Real,
         nullable=True,
         comment="Temperature in Celsius"
     )
     
     conductivity = Column(
-        Float,
+        Real,
         nullable=True,
         comment="Conductivity in S/m"
     )
     
     salinity = Column(
-        Float,
+        Real,
         nullable=True,
         comment="Salinity in PSU"
     )
     
     depth = Column(
-        Float,
+        Real,
         nullable=True,
         comment="Depth in meters"
     )
     
     # Additional sensor data
     oxygen = Column(
-        Float,
+        Real,
         nullable=True,
         comment="Dissolved oxygen in mg/L"
     )
     
     fluorescence = Column(
-        Float,
+        Real,
         nullable=True,
         comment="Fluorescence intensity"
     )
     
     turbidity = Column(
-        Float,
+        Real,
         nullable=True,
         comment="Turbidity in NTU"
     )
     
     par = Column(
-        Float,
+        Real,
         nullable=True,
         comment="Photosynthetically Available Radiation"
     )
