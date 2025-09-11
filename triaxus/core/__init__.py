@@ -9,4 +9,4 @@ from .base_plotter import BasePlotter
 from .data_validator import DataValidator
 from .error_handler import ErrorHandler
 
-__all__ = ['ConfigManager', 'BasePlotter', 'DataValidator', 'ErrorHandler']
+__all__ = ["ConfigManager", "BasePlotter", "DataValidator", "ErrorHandler"]

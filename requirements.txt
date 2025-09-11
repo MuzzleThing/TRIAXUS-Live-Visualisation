@@ -12,7 +12,8 @@ rich>=13.0.0
 # Optional dependencies for enhanced functionality
 scipy>=1.9.0  # For data interpolation
 
+# Configuration management
+dynaconf>=3.2.0  # Modern configuration management
+
 # Development dependencies (optional)
-pytest>=7.0.0
-black>=22.0.0
-flake8>=5.0.0
+black>=22.0.0  # Code formatting tool

@@ -6,10 +6,8 @@ industry best practices with clear separation of concerns.
 """
 
 from .manager import ConfigManager
-from .loader import ConfigLoader
-# Schema classes removed - using simple dict-based configuration
 
-__all__ = [
-    'ConfigManager',
-    'ConfigLoader'
-]
+# Schema classes removed - using simple dict-based configuration
+# ConfigLoader removed - using dynaconf for configuration management
+
+__all__ = ["ConfigManager"]

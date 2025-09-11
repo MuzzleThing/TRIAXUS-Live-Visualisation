@@ -1,16 +1,34 @@
 # TRIAXUS Visualization System Configuration
 # This file contains all configurable parameters for the TRIAXUS system
-# Modify this file to change system behavior without editing Python code
+# 
+#  IMPORTANT: DO NOT MODIFY THIS FILE DIRECTLY, OTHERWISE YOUR CUSTOMIZATIONS MIGHT MESS UP THE SYSTEM.
+# 
+# To customize settings:
+# 1. Copy configs/examples/custom.yaml to configs/custom.yaml
+# 2. Modify only the settings you want to change in custom.yaml
+# 3. The system will automatically merge custom.yaml with this default file
+# 
+# This ensures your customizations are preserved during system updates
 
-# System-wide settings
+# =============================================================================
+# SYSTEM CONFIGURATION
+# =============================================================================
 system:
   name: "TRIAXUS Visualization System"
   version: "1.0.0"
   debug: false
   log_level: "INFO"
 
-# Plot dimensions and layout
+# =============================================================================
+# THEME CONFIGURATION
+# =============================================================================
+theme: "oceanographic"  # Default theme: oceanographic, dark, high_contrast
+
+# =============================================================================
+# PLOT CONFIGURATION
+# =============================================================================
 plot:
+  # Dimensions
   default_width: 800
   default_height: 600
   min_width: 400
@@ -18,26 +36,29 @@ plot:
   max_width: 2000
   max_height: 1500
   
-  # Line configurations
+  # Line styling
   line:
     default_width: 2
     min_width: 1
     max_width: 10
     
-  # Marker configurations
+  # Marker styling
   marker:
     default_size: 4
     min_size: 1
     max_size: 20
     
-  # Grid configurations
+  # Grid styling
   grid:
     width: 1
     color: "lightgray"
     show: true
 
-# Color schemes for different themes
+# =============================================================================
+# THEME AND COLOR CONFIGURATION
+# =============================================================================
 colors:
+  # Theme color schemes
   themes:
     default:
       background: "#FFFFFF"
@@ -71,51 +92,50 @@ colors:
       secondary: "#0000FF"
       accent: "#00FF00"
 
-# Variable-specific colors
-variables:
-  tv290C:
-    default: "#FF6B6B"
-    oceanographic: "#B73E3A"
-    dark: "#FF6B6B"
-    high_contrast: "#FF0000"
-    
-  flECO-AFL:
-    default: "#4ECDC4"
-    oceanographic: "#1E88E5"
-    dark: "#4ECDC4"
-    high_contrast: "#00FF00"
-    
-  ph:
-    default: "#45B7D1"
-    oceanographic: "#43A047"
-    dark: "#45B7D1"
-    high_contrast: "#0000FF"
-    
-  sbeox0Mm_L:
-    default: "#96CEB4"
-    oceanographic: "#7CB342"
-    dark: "#96CEB4"
-    high_contrast: "#FFFF00"
-    
-  sal00:
-    default: "#FFEAA7"
-    oceanographic: "#8E24AA"
-    dark: "#FFEAA7"
-    high_contrast: "#FF00FF"
+  # Variable-specific colors
+  variables:
+    tv290C:
+      default: "#FF6B6B"
+      oceanographic: "#B73E3A"
+      dark: "#FF6B6B"
+      high_contrast: "#FF0000"
+      
+    flECO-AFL:
+      default: "#4ECDC4"
+      oceanographic: "#1E88E5"
+      dark: "#4ECDC4"
+      high_contrast: "#00FF00"
+      
+    ph:
+      default: "#45B7D1"
+      oceanographic: "#43A047"
+      dark: "#45B7D1"
+      high_contrast: "#0000FF"
+      
+    sbeox0Mm_L:
+      default: "#96CEB4"
+      oceanographic: "#7CB342"
+      dark: "#96CEB4"
+      high_contrast: "#FFFF00"
+      
+    sal00:
+      default: "#FFEAA7"
+      oceanographic: "#8E24AA"
+      dark: "#FFEAA7"
+      high_contrast: "#FF00FF"
 
-# Mapbox configurations
+# =============================================================================
+# MAP CONFIGURATION
+# =============================================================================
 mapbox:
-  token: "pk.eyJ1Ijoic3RldmVubGkzNjUiLCJhIjoiY21mODh5ZWljMDYzZDJtcGl1NnFsYzM0NCJ9.vCkXjWG4yP7uRKn3AQekLg"  # Mapbox token
-  style: "satellite-streets"  # Default Mapbox style
-  # Offline mode: when token is empty, use OpenStreetMap
-  offline_mode: false  # Set to true for offline usage
+  token: "pk.eyJ1Ijoic3RldmVubGkzNjUiLCJhIjoiY21mODh5ZWljMDYzZDJtcGl1NnFsYzM0NCJ9.vCkXjWG4yP7uRKn3AQekLg"
+  style: "satellite-streets"
+  offline_mode: false
 
-# Map configurations
 map:
-  # Default map style
+  # Style settings
   default_style: "satellite-streets"
   available_styles:
-    # Mapbox styles (require token)
     - "satellite-streets"
     - "satellite"
     - "streets"
@@ -124,14 +144,13 @@ map:
     - "dark"
     - "basic"
     - "hybrid"
-    # Offline style (no token required)
     - "open-street-map"
   
-  # Map dimensions
+  # Dimensions
   width: 800
   height: 600
   
-  # Map padding and zoom
+  # Zoom settings
   padding: 0.2
   zoom:
     auto_zoom:
@@ -145,138 +164,223 @@ map:
       medium: 10
       small: 12
       very_small: 14
+    default: 10
+    min: 1
+    max: 20
   
-  # Map projection (for scattergeo)
+  # Visual styling
   projection: "equirectangular"
-  
-  # Map colors
   colors:
     land: "lightgray"
     ocean: "lightblue"
     lakes: "lightblue"
     rivers: "lightblue"
   
-  # Trajectory line styling
+  # Trajectory styling
   line:
     width: 3
-    color: "#D32F2F"  # Red for trajectory
+    color: "#D32F2F"
     
   # Marker styling
   marker:
     size: 8
     opacity: 0.8
-    start_color: "#43A047"  # Green for start
-    end_color: "#D32F2F"    # Red for end
-    current_color: "#1976D2" # Blue for data points
+    start_color: "#43A047"
+    end_color: "#D32F2F"
+    current_color: "#1976D2"
     start_size: 12
     end_size: 12
-    
-  # Zoom configuration
-  zoom:
-    default: 10
-    min: 1
-    max: 20
-    # Auto-zoom thresholds based on data span (in degrees)
-    auto_zoom:
-      very_wide: 2.0    # > 2.0 degrees -> zoom level 6
-      wide: 1.0         # > 1.0 degrees -> zoom level 8
-      medium: 0.5       # > 0.5 degrees -> zoom level 10
-      small: 0.2        # > 0.2 degrees -> zoom level 12
-      very_small: 0.0   # <= 0.2 degrees -> zoom level 14
   
-  # View padding (percentage of data range)
-  padding: 0.2  # 20% padding around data bounds
-  
-  # Layout margins
+  # Layout
   margin:
     left: 0
     right: 0
     top: 60
     bottom: 0
 
-# Font configurations
-font:
-  family: "Arial, sans-serif"
-  size: 12
-  title_size: 14
-  annotation_size: 10
-  status_size: 12
+# =============================================================================
+# PLOT-SPECIFIC CONFIGURATIONS
+# =============================================================================
 
-# Annotation configurations
-annotations:
-  font_size: 10
-  color: "gray"
-  border_width: 1
-  border_color: "black"
-  background_color: "white"
-  opacity: 0.8
+# Time Series Plot Configuration
+time_series:
+  # Standard variables
+  standard_variables:
+    - "temperature"
+    - "salinity"
+    - "oxygen"
+    - "fluorescence"
+    - "ph"
+  
+  # Default values
+  defaults:
+    data_source: "TRIAXUS"
+    realtime_status: "Running"
+    industry_data_source: "Mixed (Historical + Real-time)"
+    industry_title: "TRIAXUS Industry Standard Time Series Plot"
+  
+  # Plot dimensions
+  dimensions:
+    industry_height: 700
+    industry_width: 1000
+  
+  # Status colors
+  status_colors:
+    running: "green"
+    stopped: "red"
+  
+  # Annotation settings
+  annotations:
+    data_source:
+      x: 0.02
+      y: 0.98
+      font_size: 10
+      color: "gray"
+    variable_count:
+      x: 0.98
+      y: 0.98
+      font_size: 10
+      color: "gray"
+    time_range:
+      x: 0.02
+      y: 0.02
+      font_size: 9
+      color: "gray"
+    depth_range:
+      x: 0.98
+      y: 0.02
+      font_size: 9
+      color: "gray"
+    realtime_status:
+      x: 0.5
+      y: 0.95
+      font_size: 12
+      font_family: "Arial Black"
+    statistics:
+      x: 0.98
+      y_start: 0.95
+      spacing: 0.1
+      font_size: 9
+      color: "gray"
 
-# Status display configurations
-status:
-  font_size: 12
-  border_width: 2
-  colors:
-    success: "#4CAF50"
-    warning: "#FF9800"
-    error: "#F44336"
-    info: "#2196F3"
-
-# Data processing configurations
-data:
-  # Sampling configurations
-  sampling:
-    default_size: 1000
-    min_size: 100
-    max_size: 10000
-    random_seed: 42
-    
-  # Test data generation
-  test_data:
-    default_hours: 2
-    default_points: 120
-    default_pattern: "realistic"
-    random_seed: 42
-    depth_range: [0, 1000]
-    lat_range: [-90, 90]
-    lon_range: [-180, 180]
-    
+# Contour Plot Configuration
+contour:
+  # Grid resolution
+  grid_resolution:
+    max_time_points: 100
+    max_depth_points: 100
+    fallback_time_points: 50
+    fallback_depth_points: 50
+  
+  # Interpolation settings
+  interpolation:
+    method: "linear"
+    fill_value: null
+  
+  # Visual settings
+  colorscale: "Viridis"
+  show_colorbar: true
+  
+  # Annotation settings
+  annotations:
+    variable_info:
+      x: 0.02
+      y: 0.98
+      font_size: 12
+      color: "black"
+    interpolation_note:
+      x: 0.98
+      y: 0.02
+      font_size: 10
+      color: "gray"
+    text: "Interpolated data"
+  
+  # Scatter overlay settings
+  scatter_overlay:
+    size: 4
+    line_width: 1
+    line_color: "black"
+    colorscale: "Viridis"
+  
   # Data validation
-  validation:
-    level: "moderate"  # strict, moderate, lenient
-    error_action: "warn"  # error, warn, ignore
-    log_errors: true
-    max_errors: 100
+  min_data_points: 3
 
-# File I/O configurations
-files:
-  default_format: "csv"
-  encoding: "utf-8"
-  delimiter: ","
-  header: 0
-  index_col: null
-  parse_dates: ["time"]
-  date_format: "%Y-%m-%d %H:%M:%S"
+# Depth Profile Plot Configuration
+depth_profile:
+  # Thermocline detection
+  thermocline:
+    variable_name: "tv290C"
+    min_data_points: 10
+    line_style: "dash"
+    line_color: "red"
+    annotation_position: "top right"
+  
+  # Annotation settings
+  annotations:
+    depth_range:
+      x: 0.98
+      y: 0.02
+      font_size: 10
+      color: "gray"
+    data_points:
+      x: 0.02
+      y: 0.02
+      font_size: 10
+      color: "gray"
+    zone_labels:
+      x: 0.02
+      font_size: 10
+      color: "gray"
 
-# Performance configurations
-performance:
-  max_data_points: 10000
-  enable_caching: true
-  cache_size: 100
-  parallel_processing: false
-  max_workers: 4
+# Map Plot Configuration
+map_plot:
+  # Default colors and sizes
+  defaults:
+    line_color: "#D32F2F"
+    line_width: 3
+    marker_size: 8
+    marker_opacity: 0.8
+    start_color: "#43A047"
+    end_color: "#D32F2F"
+    current_color: "#1976D2"
+    start_size: 12
+    end_size: 12
+    arrow_count: 10
+  
+  # Zoom level mappings
+  zoom_levels:
+    very_wide: 6
+    wide: 8
+    medium: 10
+    small: 12
+    very_small: 14
+  
+  # Offline map settings
+  offline:
+    style: "open-street-map"
+    colors:
+      land: "lightgray"
+      ocean: "lightblue"
+      lakes: "lightblue"
+      rivers: "lightblue"
+    projection: "equirectangular"
 
-# Data generation configurations
+# =============================================================================
+# DATA CONFIGURATION
+# =============================================================================
+
+# Data Generation Configuration
 data_generation:
-  # Default parameters for test data generation
+  # Default parameters
   default_duration_hours: 2.0
   default_points_per_hour: 60
   quick_points_per_hour: 30
   daily_points_per_hour: 10
   
-  # Random seed for reproducible data
+  # Random seed
   random_seed: 42
   
-  # Default locations for trajectory data
+  # Default locations
   locations:
     australia:
       start_lat: -16.9
@@ -289,12 +393,12 @@ data_generation:
   
   # Oceanographic parameter ranges
   oceanographic_ranges:
-    temperature: [0, 30]  # Celsius
-    salinity: [30, 40]    # PSU
-    ph: [7.5, 8.5]        # pH units
-    oxygen: [0, 15]       # mg/L
-    fluorescence: [0, 2]  # Relative units
-    depth: [0, 200]       # meters for typical profiles
+    temperature: [0, 30]
+    salinity: [30, 40]
+    ph: [7.5, 8.5]
+    oxygen: [0, 15]
+    fluorescence: [0, 2]
+    depth: [0, 200]
   
   # Default oceanographic values
   default_values:
@@ -304,13 +408,13 @@ data_generation:
     oxygen: 8.0
     fluorescence: 0.5
   
-  # Noise levels for realistic data
+  # Noise levels
   noise_levels:
     low: 0.01
     medium: 0.05
     high: 0.1
   
-  # Amplitude factors for data variation
+  # Amplitude factors
   amplitude_factors:
     temperature: 4.0
     salinity: 1.5
@@ -318,42 +422,121 @@ data_generation:
     fluorescence: 0.3
     ph: 0.2
 
-# Data sampling configurations
+# Data Processing Configuration
+data:
+  # Sampling
+  sampling:
+    default_size: 1000
+    min_size: 100
+    max_size: 10000
+    random_seed: 42
+    
+  # Test data
+  test_data:
+    default_hours: 2
+    default_points: 120
+    default_pattern: "realistic"
+    random_seed: 42
+    depth_range: [0, 1000]
+    lat_range: [-90, 90]
+    lon_range: [-180, 180]
+    
+  # Validation
+  validation:
+    level: "moderate"
+    error_action: "warn"
+    log_errors: true
+    max_errors: 100
+
+# Data Sampling Configuration
 data_sampling:
-  # Default sample sizes
+  # Sample sizes
   default_sample_size: 1000
   large_sample_size: 2000
   very_large_sample_size: 5000
   huge_sample_size: 10000
   
-  # Random seed for reproducible sampling
+  # Random seed
   random_seed: 42
   
-  # Depth intervals for stratified sampling
+  # Depth intervals
   depth_intervals:
     - [0, 50]
     - [50, 100]
     - [100, 200]
   
-  # Time intervals for time-based sampling
+  # Time intervals
   time_intervals:
     hourly: "1H"
     daily: "1D"
     minute: "1min"
 
-# Statistical constants
+# =============================================================================
+# UI AND DISPLAY CONFIGURATION
+# =============================================================================
+
+# Font Configuration
+font:
+  family: "Arial, sans-serif"
+  size: 12
+  title_size: 14
+  annotation_size: 10
+  status_size: 12
+
+# Annotation Configuration
+annotations:
+  font_size: 10
+  color: "gray"
+  border_width: 1
+  border_color: "black"
+  background_color: "white"
+  opacity: 0.8
+
+# Status Display Configuration
+status:
+  font_size: 12
+  border_width: 2
+  colors:
+    success: "#4CAF50"
+    warning: "#FF9800"
+    error: "#F44336"
+    info: "#2196F3"
+
+# =============================================================================
+# SYSTEM CONFIGURATION
+# =============================================================================
+
+# File I/O Configuration
+files:
+  default_format: "csv"
+  encoding: "utf-8"
+  delimiter: ","
+  header: 0
+  index_col: null
+  parse_dates: ["time"]
+  date_format: "%Y-%m-%d %H:%M:%S"
+
+# Performance Configuration
+performance:
+  max_data_points: 10000
+  enable_caching: true
+  cache_size: 100
+  parallel_processing: false
+  max_workers: 4
+
+# Statistical Configuration
 statistics:
-  # Outlier detection parameters
+  # Outlier detection
   outlier_detection:
     iqr_multiplier: 1.5
     zscore_threshold: 3.0
   
-  # Quantile definitions
+  # Quantiles
   quantiles:
     q25: 0.25
     q75: 0.75
 
-# Depth zone definitions
+# Depth Zone Definitions
 depth_zones:
   - [0, 200, "Epipelagic", "rgba(0,255,0,0.1)"]
   - [200, 1000, "Mesopelagic", "rgba(0,0,255,0.1)"]
