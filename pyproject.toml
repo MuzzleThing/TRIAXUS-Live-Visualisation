@@ -1,114 +1,18 @@
-[project]
-name = "triaxus-live-visualisation"
-version = "0.1.0"
-description = "Real-time oceanographic data processing and visualization system for TRIAXUS CTD operations"
-readme = "README.md"
-requires-python = ">=3.12"
-dependencies = [
-    "sqlalchemy>=2.0.43",
-    "psycopg2-binary>=2.9.0",
-    "alembic>=1.13.0",
-    "pydantic>=2.0.0",
-    "pydantic-settings>=2.0.0",
-    "geoalchemy2>=0.14.0",
-    "numpy>=1.24.0",
-    "pandas>=2.0.0",
-    "python-dateutil>=2.8.0",
-    "celery>=5.3.0",
-    "redis>=4.5.0",
-    "fastapi>=0.104.0",
-    "uvicorn>=0.24.0",
-    "python-multipart>=0.0.6",
-    "httpx>=0.25.0",
-]
-
-[project.optional-dependencies]
-dev = [
-    "pytest>=7.4.0",
-    "pytest-asyncio>=0.21.0",
-    "pytest-cov>=4.1.0",
-    "black>=23.0.0",
-    "isort>=5.12.0",
-    "flake8>=6.0.0",
-    "mypy>=1.5.0",
-    "pre-commit>=3.4.0",
-]
-
-[project.scripts]
-triaxus-init-db = "triaxus_backend.scripts.init_db:main"
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
 [tool.black]
 line-length = 88
-target-version = ['py312']
+target-version = ['py38', 'py39', 'py310', 'py311', 'py312']
 include = '\.pyi?$'
 extend-exclude = '''
 /(
-    \.eggs
+  # directories
+  \.eggs
   | \.git
   | \.hg
   | \.mypy_cache
   | \.tox
   | \.venv
-  | _build
-  | buck-out
   | build
   | dist
-  | migrations
 )/
 '''
 
-[tool.isort]
-profile = "black"
-multi_line_output = 3
-line_length = 88
-known_first_party = ["triaxus_backend"]
-
-[tool.mypy]
-python_version = "3.12"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-warn_unreachable = true
-strict_equality = true
-
-[[tool.mypy.overrides]]
-module = [
-    "geoalchemy2.*",
-    "celery.*",
-    "alembic.*",
-]
-ignore_missing_imports = true
-
-[tool.pytest.ini_options]
-testpaths = ["triaxus_backend/tests"]
-python_files = ["test_*.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-addopts = [
-    "--strict-markers",
-    "--strict-config",
-    "--cov=triaxus_backend",
-    "--cov-report=term-missing",
-    "--cov-report=html",
-    "--cov-report=xml",
-]
-markers = [
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "integration: marks tests as integration tests",
-    "unit: marks tests as unit tests",
-]
-
-# Explicitly tell hatch which package to include in the wheel/editable build
-[tool.hatch.build.targets.wheel]
-packages = ["triaxus_backend"]
