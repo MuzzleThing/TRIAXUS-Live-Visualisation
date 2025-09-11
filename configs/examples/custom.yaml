@@ -1,18 +1,31 @@
 # Custom Configuration Override for TRIAXUS
 # This file demonstrates how to override default settings
 # Only include the settings you want to change from default.yaml
+# 
+# Usage: Copy this file to configs/custom.yaml and modify as needed
+# The system will automatically merge these settings with default.yaml
 
-# Override plot dimensions (larger for presentations)
+# =============================================================================
+# PLOT CUSTOMIZATION
+# =============================================================================
 plot:
+  # Override plot dimensions (larger for presentations)
   default_width: 1200
   default_height: 800
+  
+  # Override line styling
   line:
     default_width: 3
+    
+  # Override marker styling
   marker:
     default_size: 6
 
-# Add a new custom theme
+# =============================================================================
+# THEME AND COLOR CUSTOMIZATION
+# =============================================================================
 colors:
+  # Add custom themes
   themes:
     custom_ocean:
       background: "#F0F8FF"  # Alice Blue
@@ -21,35 +34,197 @@ colors:
       primary: "#006400"     # Dark Green
       secondary: "#8B0000"   # Dark Red
       accent: "#FF8C00"      # Dark Orange
+    
+    presentation:
+      background: "#FFFFFF"
+      grid: "#CCCCCC"
+      text: "#000000"
+      primary: "#1F4E79"
+      secondary: "#C5504B"
+      accent: "#70AD47"
 
-# Override map settings
+  # Override variable colors
+  variables:
+    tv290C:
+      custom_ocean: "#FF4500"  # Orange Red
+      presentation: "#E74C3C"  # Red
+    sal00:
+      custom_ocean: "#4169E1"  # Royal Blue
+      presentation: "#3498DB"  # Blue
+
+# =============================================================================
+# MAP CUSTOMIZATION
+# =============================================================================
+mapbox:
+  # Override Mapbox token (use your own token)
+  # token: "your_mapbox_token_here"
+  
+  # Override default style
+  style: "outdoors"
+
 map:
+  # Override map style
   default_style: "outdoors"
+  
+  # Override map dimensions
+  width: 1000
+  height: 700
+  
+  # Override trajectory styling
   line:
     width: 4
-    color: "#006400"
+    color: "#006400"  # Dark Green
+    
+  # Override marker styling
   marker:
     size: 10
+    start_color: "#228B22"  # Forest Green
+    end_color: "#DC143C"    # Crimson
+    current_color: "#4169E1" # Royal Blue
 
-# Override font settings
+# =============================================================================
+# PLOT-SPECIFIC CUSTOMIZATION
+# =============================================================================
+
+# Time Series Plot Customization
+time_series:
+  # Override standard variables
+  standard_variables:
+    - "temperature"
+    - "salinity"
+    - "oxygen"
+    - "fluorescence"
+    - "ph"
+    - "turbidity"  # Add custom variable
+  
+  # Override default values
+  defaults:
+    data_source: "Custom TRIAXUS System"
+    industry_title: "Custom Oceanographic Time Series Plot"
+  
+  # Override plot dimensions
+  dimensions:
+    industry_height: 800
+    industry_width: 1200
+
+# Contour Plot Customization
+contour:
+  # Override grid resolution
+  grid_resolution:
+    max_time_points: 150
+    max_depth_points: 150
+    
+  # Override visual settings
+  colorscale: "Plasma"  # Alternative to Viridis
+  show_colorbar: true
+  
+  # Override scatter overlay
+  scatter_overlay:
+    size: 6
+    line_width: 2
+
+# Depth Profile Customization
+depth_profile:
+  # Override thermocline detection
+  thermocline:
+    variable_name: "tv290C"
+    line_color: "blue"
+    annotation_position: "top left"
+
+# =============================================================================
+# DATA CUSTOMIZATION
+# =============================================================================
+
+# Data Generation Customization
+data_generation:
+  # Override default parameters
+  default_duration_hours: 4.0
+  default_points_per_hour: 30
+  
+  # Override random seed for reproducible data
+  random_seed: 123
+  
+  # Add custom locations
+  locations:
+    custom_site:
+      start_lat: -33.8688
+      start_lon: 151.2093
+      description: "Sydney Harbour"
+  
+  # Override oceanographic ranges
+  oceanographic_ranges:
+    temperature: [5, 25]    # Colder waters
+    salinity: [32, 38]      # Different salinity range
+    depth: [0, 500]         # Deeper profiles
+
+# Data Processing Customization
+data:
+  # Override sampling settings
+  sampling:
+    default_size: 2000
+    random_seed: 456
+    
+  # Override test data settings
+  test_data:
+    default_hours: 6
+    default_points: 300
+
+# =============================================================================
+# UI AND DISPLAY CUSTOMIZATION
+# =============================================================================
+
+# Font Customization
 font:
   family: "Times New Roman, serif"
   size: 14
-  title_size: 16
+  title_size: 18
+  annotation_size: 12
+  status_size: 14
 
-# Override annotation settings
+# Annotation Customization
 annotations:
   font_size: 12
   color: "navy"
   border_width: 2
+  border_color: "darkblue"
   background_color: "lightyellow"
   opacity: 0.9
 
-# Override data processing settings
-data:
-  sampling:
-    default_size: 2000
-    random_seed: 123
-  test_data:
-    default_hours: 4
-    default_points: 200
+# Status Display Customization
+status:
+  font_size: 14
+  border_width: 3
+  colors:
+    success: "#2E8B57"  # Sea Green
+    warning: "#FF8C00"  # Dark Orange
+    error: "#DC143C"    # Crimson
+    info: "#4169E1"     # Royal Blue
+
+# =============================================================================
+# SYSTEM CUSTOMIZATION
+# =============================================================================
+
+# Performance Customization
+performance:
+  max_data_points: 15000
+  enable_caching: true
+  cache_size: 200
+  parallel_processing: true
+  max_workers: 8
+
+# File I/O Customization
+files:
+  default_format: "csv"
+  encoding: "utf-8"
+  delimiter: ","
+  date_format: "%Y-%m-%d %H:%M:%S"
+
+# =============================================================================
+# CUSTOM DEPTH ZONES
+# =============================================================================
+# Override depth zones for specific regions
+depth_zones:
+  - [0, 100, "Surface", "rgba(0,255,255,0.1)"]
+  - [100, 500, "Mid-water", "rgba(0,0,255,0.1)"]
+  - [500, 1000, "Deep", "rgba(128,0,128,0.1)"]
+  - [1000, 2000, "Abyssal", "rgba(0,0,0,0.1)"]
