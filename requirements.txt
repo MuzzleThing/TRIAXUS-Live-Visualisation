@@ -14,6 +14,7 @@ scipy>=1.9.0  # For data interpolation
 
 # Configuration management
 dynaconf>=3.2.0  # Modern configuration management
+pyyaml>=6.0  # YAML file parsing (fallback for dynaconf)
 
 # Development dependencies (optional)
 black>=22.0.0  # Code formatting tool
