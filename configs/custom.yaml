@@ -1,0 +1,10 @@
+# TRIAXUS Custom Configuration
+# This file overrides settings from default.yaml
+# 
+# To customize the system, modify only the settings you want to change here.
+# The system will automatically merge this file with default.yaml
+
+# =============================================================================
+# THEME CONFIGURATION
+# =============================================================================
+theme: "dark"  # Set to dark theme for testing

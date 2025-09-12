@@ -1,0 +1,21 @@
+# Dark Theme Configuration
+# Dark theme for low-light environments
+
+colors:
+  background: "#2C3E50"
+  text: "#ECF0F1"
+  grid: "#34495E"
+  primary: "#E74C3C"
+  secondary: "#3498DB"
+  accent: "#2ECC71"
+
+template: "plotly_dark"
+
+variables:
+  tv290C: "#FF6B6B"
+  flECO-AFL: "#4ECDC4"
+  ph: "#45B7D1"
+  sbeox0Mm_L: "#96CEB4"
+  sal00: "#FFEAA7"
+
+description: "Dark theme optimized for low-light viewing conditions"

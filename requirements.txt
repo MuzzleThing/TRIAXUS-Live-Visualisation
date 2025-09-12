@@ -1,0 +1,20 @@
+# TRIAXUS Visualization System Requirements
+
+# Core dependencies
+pandas>=1.5.0
+numpy>=1.21.0
+plotly>=5.0.0
+
+# CLI dependencies
+typer[all]>=0.9.0
+rich>=13.0.0
+
+# Optional dependencies for enhanced functionality
+scipy>=1.9.0  # For data interpolation
+
+# Configuration management
+dynaconf>=3.2.0  # Modern configuration management
+pyyaml>=6.0  # YAML file parsing (fallback for dynaconf)
+
+# Development dependencies (optional)
+black>=22.0.0  # Code formatting tool
