@@ -26,21 +26,47 @@ A modern, configuration-driven visualization toolkit for oceanographic research.
 pip install -r requirements.txt
 ```
 
-### Basic usage
+### CLI Usage
 
 ```bash
-# Time series
+# Basic plot generation
 python triaxus-plot time-series --output time_series.html
-
-# Contour (use existing column names, e.g. tv290C)
 python triaxus-plot contour --variable tv290C --output contour.html
-
-# Depth profile
 python triaxus-plot depth-profile --variables tv290C,sal00 --output depth_profile.html
-
-# Map (Mapbox if token available, otherwise fallback)
 python triaxus-plot map --output map.html
+
+# Get help
+python triaxus-plot --help
+python triaxus-plot time-series --help
 ```
+
+For detailed CLI examples and advanced usage, see [CLI_USAGE.md](docs/CLI_USAGE.md).
+
+### Python API Usage
+
+```python
+from triaxus import TriaxusVisualizer
+from triaxus.data import create_plot_test_data
+
+# Initialize visualizer
+viz = TriaxusVisualizer(theme="oceanographic")
+
+# Generate sample data
+data = create_plot_test_data(hours=2.0)
+
+# Create plots programmatically
+time_series_html = viz.create_time_series_plot(data, variables=["tv290C", "sal00"])
+contour_html = viz.create_contour_plot(data, variable="tv290C")
+depth_html = viz.create_depth_profile_plot(data, variables=["tv290C", "sal00"])
+map_html = viz.create_map_plot(data)
+
+# Get Plotly Figure for custom modifications
+figure = viz.create_plot_figure("time_series", data, variables=["tv290C"])
+figure.update_layout(title="Custom Title")
+figure.show()
+```
+
+For detailed Python API examples and advanced usage, see [API_USAGE.md](docs/API_USAGE.md).
 
 ### Help
 
@@ -49,91 +75,6 @@ python triaxus-plot map --output map.html
 ./triaxus-plot time-series --help
 ```
 
-## Plot Types
-
-### 1) Time Series
-Display ocean variables over time. Supports multiple variables and real-time updates.
-
-```bash
-# Basic
-./triaxus-plot time-series --output basic.html
-
-# Multi-variable (use available columns)
-./triaxus-plot time-series --variables tv290C,sal00,sbeox0Mm_L --output multi.html
-
-# Real-time monitoring
-./triaxus-plot time-series --real-time --status Running --output realtime.html
-```
-
-Notes:
-- Supported example columns from the built-in generator: `tv290C`, `sal00`, `sbeox0Mm_L`, `flECO-AFL`, `ph`
-- Common options: `--time-range "YYYY-MM-DD HH:MM:SS,YYYY-MM-DD HH:MM:SS"`, `--depth-range "min,max"`, `--theme`, `--width`, `--height`
-
-### 2) Contour
-2D distribution in time-depth space with interpolation and automatic fallback.
-
-```bash
-# Temperature contour (using available column)
-./triaxus-plot contour --variable tv290C --output temp_contour.html
-
-# With depth range
-./triaxus-plot contour --variable tv290C --depth-range "20,80" --output temp_contour_filtered.html
-```
-
-Notes:
-- If interpolation fails (QHull precision), the plot automatically falls back to a scatter representation and still outputs successfully.
-
-### 3) Depth Profile
-Oceanographic convention (depth axis inverted). Supports multiple variables, depth zones, and thermocline detection.
-
-```bash
-# Basic
-./triaxus-plot depth-profile --variables tv290C --output temp_profile.html
-
-# Multi-variable
-./triaxus-plot depth-profile --variables tv290C,sal00,sbeox0Mm_L --output multi_profile.html
-
-# With depth zones
-./triaxus-plot depth-profile --variables tv290C,sal00 --depth-zones --output zones_profile.html
-
-# With thermocline detection
-./triaxus-plot depth-profile --variables tv290C --thermocline --output thermocline_profile.html
-```
-
-### 4) Map Trajectory
-Display GPS trajectory and positions with configurable base maps.
-
-```bash
-# Basic
-./triaxus-plot map --output map_basic.html
-
-# Time-filtered
-./triaxus-plot map --time-range "2024-01-01 08:00:00,2024-01-01 18:00:00" --output map_filtered.html
-
-# Specific styles (if Mapbox token configured)
-./triaxus-plot map --map-style satellite-streets --output map_satellite_streets.html
-./triaxus-plot map --map-style satellite --output map_satellite.html
-./triaxus-plot map --map-style streets --output map_streets.html
-./triaxus-plot map --map-style dark --output map_dark.html
-
-# Offline fallback / OSM-like
-./triaxus-plot map --map-style open-street-map --output map_osm_offline.html
-```
-
-Notes:
-- If a Mapbox token is configured, Mapbox styles render online.
-- Without a token or when using offline styles, the plot falls back to offline/`scattergeo` modes.
-- Trajectory direction markers (simple triangle markers) are added at intervals; the count is configurable in config.
-
-## CLI Reference (selected)
-
-- Common options: `--output`, `--theme {oceanographic,dark,default,high_contrast}`, `--width`, `--height`, `--title`, `--verbose`
-- Time series data generation: `--daily-data`, `--day`, `--data-hours`, `--data-points`, `--points-per-hour`
-- Contour: `--variable`, `--depth-range`, optional `--annotations`
-- Depth profile: `--variables`, `--depth-range`, `--depth-zones`, `--thermocline`
-- Map: `--time-range`, `--map-style`
-
-Run help for each command to see the full list.
 
 ## Themes
 
@@ -149,6 +90,7 @@ Examples:
 ./triaxus-plot time-series --theme dark --output dark_plot.html
 ./triaxus-plot time-series --theme high_contrast --output contrast_plot.html
 ```
+
 
 ## Configuration
 
@@ -182,26 +124,82 @@ map_plot:
 - Variable names: Use existing columns from the generator, e.g., `tv290C`, `sal00`, `sbeox0Mm_L`, `flECO-AFL`, `ph`.
 - Custom size not applying (maps): Passing `--width`/`--height` works; the logic prioritizes CLI dimensions over defaults.
 
-## Project Structure (high level)
+## Project Structure
 
 ```
 triaxus-plotter/
 ├── triaxus-plot                 # CLI entry (executable)
 ├── cli_typer.py                 # CLI implementation
-├── triaxus/
+├── settings.py                  # Global settings
+├── requirements.txt              # Python dependencies
+├── pyproject.toml               # Project configuration
+├── LICENSE                      # MIT License
+├── README.md                    # This file
+├── triaxus/                     # Main package
+│   ├── __init__.py
 │   ├── visualizer.py            # Unified plotting API
-│   ├── plotters/
-│   │   ├── time_series.py
-│   │   ├── depth_profile.py
-│   │   ├── contour.py
-│   │   ├── map_plot.py
+│   ├── core/                    # Core functionality
+│   │   ├── __init__.py
+│   │   ├── base_plotter.py      # Base plotter class
+│   │   ├── data_validator.py    # Data validation
+│   │   ├── error_handler.py    # Error handling
+│   │   └── config/             # Configuration management
+│   │       ├── __init__.py
+│   │       ├── manager.py       # Main config manager
+│   │       ├── theme_manager.py # Theme management
+│   │       ├── plot_config_manager.py
+│   │       ├── data_config_manager.py
+│   │       └── ui_config_manager.py
+│   ├── plotters/                # Plot implementations
+│   │   ├── __init__.py
+│   │   ├── plotter_factory.py   # Plotter factory
+│   │   ├── time_series.py       # Time series plots
+│   │   ├── time_series_helpers.py
+│   │   ├── depth_profile.py     # Depth profile plots
+│   │   ├── depth_helpers.py
+│   │   ├── contour.py           # Contour plots
+│   │   ├── contour_helpers.py
+│   │   ├── map_plot.py          # Map trajectory plots
 │   │   └── map_helpers.py
-│   └── core/config/             # Config managers (Dynaconf-backed)
-├── configs/
-│   ├── default.yaml
-│   └── custom.yaml (optional)
-└── docs/
-    └── README_EN.md             # This file
+│   ├── data/                    # Data processing
+│   │   ├── __init__.py
+│   │   ├── simple_data_generator.py # Test data generation
+│   │   ├── processor.py         # Data processing
+│   │   └── sampler.py           # Data sampling
+│   └── utils/                   # Utilities
+│       ├── __init__.py
+│       └── html_generator.py     # HTML generation
+├── configs/                     # Configuration files
+│   ├── default.yaml             # Default configuration
+│   ├── custom.yaml              # Custom overrides (optional)
+│   ├── examples/
+│   │   └── custom.yaml          # Example custom config
+│   └── themes/                  # Theme definitions
+│       ├── oceanographic.yaml
+│       ├── dark.yaml
+│       └── high_contrast.yaml
+├── tests/                       # Test suite
+│   ├── __init__.py
+│   ├── run_tests.py             # Main test runner
+│   ├── run_split_tests.py       # Alternative test runner
+│   ├── test_data_quality.py     # Data quality tests
+│   ├── plots/                   # Plot-specific tests
+│   │   ├── __init__.py
+│   │   ├── test_time_series_plots.py
+│   │   ├── test_depth_profile_plots.py
+│   │   └── test_contour_plots.py
+│   ├── maps/                    # Map-specific tests
+│   │   ├── __init__.py
+│   │   ├── test_map_trajectory.py
+│   │   └── test_map_view.py
+│   ├── themes/                  # Theme-specific tests
+│   │   ├── __init__.py
+│   │   └── test_theme_functionality.py
+│   └── output/                  # Generated test outputs
+│       └── *.html               # Test plot files
+└── docs/                        # Documentation
+    ├── API_USAGE.md             # Detailed Python API reference
+    └── CLI_USAGE.md             # Detailed CLI usage guide
 ```
 
 ## Quick Verification
