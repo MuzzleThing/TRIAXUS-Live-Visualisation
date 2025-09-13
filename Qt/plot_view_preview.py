@@ -1,4 +1,4 @@
-# test_plot_view.py
+# This script is solely made for previewing the plot view
 import sys
 from PySide6.QtWidgets import QApplication
 from plot_view import PlotView
