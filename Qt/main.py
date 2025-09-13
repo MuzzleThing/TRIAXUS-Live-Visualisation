@@ -20,20 +20,23 @@ class EmbeddedServer:
         self.server = None
         self.server_thread = None
         self.running = False
+        self.serve_directory = None
         
     def start_server(self, directory):
         """Start the HTTP server in a separate thread"""
         if self.running:
             return
             
-        # Change to the directory we want to serve
-        original_dir = os.getcwd()
-        os.chdir(directory)
+        self.serve_directory = directory
         
         try:
+            # Create custom handler that serves from specific directory
+            class CustomHandler(http.server.SimpleHTTPRequestHandler):
+                def __init__(self, *args, **kwargs):
+                    super().__init__(*args, directory=directory, **kwargs)
+            
             # Create server
-            handler = http.server.SimpleHTTPRequestHandler
-            self.server = socketserver.TCPServer(("", self.port), handler)
+            self.server = socketserver.TCPServer(("", self.port), CustomHandler)
             
             # Start server in a separate thread
             self.server_thread = threading.Thread(target=self.server.serve_forever)
@@ -42,15 +45,15 @@ class EmbeddedServer:
             
             self.running = True
             print(f"Server started on http://localhost:{self.port}")
+            print(f"Serving directory: {directory}")
             
         except OSError as e:
             if e.errno == 98:  # Address already in use
                 print(f"Port {self.port} is already in use")
             else:
                 print(f"Failed to start server: {e}")
-        finally:
-            # Restore original directory
-            os.chdir(original_dir)
+        except Exception as e:
+            print(f"Failed to start server: {e}")
     
     def stop_server(self):
         """Stop the HTTP server"""
