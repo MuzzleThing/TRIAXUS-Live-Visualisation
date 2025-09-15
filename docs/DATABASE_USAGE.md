@@ -119,17 +119,6 @@ TRIAXUS creates two main tables using SQLAlchemy ORM models:
 1. **`oceanographic_data`** - Main data table for measurements
 2. **`data_sources`** - Metadata table for tracking data files
 
-### Important Note: Column Naming Convention
-
-All database column names use lowercase naming convention to ensure compatibility with PostgreSQL's identifier handling. This means:
-
-- `tv290C` → `tv290c` (Temperature)
-- `sbeox0Mm_L` → `sbeox0mm_l` (Dissolved Oxygen)  
-- `flECO_AFL` → `fleco_afl` (Fluorescence)
-- `filename` → `source_file` (in data_sources table)
-
-This naming convention is consistent throughout the codebase, SQL files, and documentation.
-
 ### Oceanographic Data Table
 
 The `OceanographicData` model creates the following table structure:
@@ -146,10 +135,10 @@ CREATE TABLE oceanographic_data (
     longitude DOUBLE PRECISION NOT NULL,
     
     -- Oceanographic parameters
-    tv290c DOUBLE PRECISION,           -- Temperature in Celsius
+    tv290C DOUBLE PRECISION,           -- Temperature in Celsius
     sal00 DOUBLE PRECISION,           -- Salinity in PSU
-    sbeox0mm_l DOUBLE PRECISION,      -- Dissolved oxygen in mg/L
-    fleco_afl DOUBLE PRECISION,      -- Fluorescence in mg/m³
+    sbeox0Mm_L DOUBLE PRECISION,      -- Dissolved oxygen in mg/L
+    flECO_AFL DOUBLE PRECISION,      -- Fluorescence in mg/m³
     ph DOUBLE PRECISION,              -- pH value
     
     -- Metadata fields
@@ -168,41 +157,20 @@ CREATE TABLE data_sources (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     
     -- Source information
-    source_file VARCHAR(255) UNIQUE NOT NULL,
-    file_type VARCHAR(50) DEFAULT 'CNV',
-    file_size BIGINT,
+    filename VARCHAR(255) UNIQUE NOT NULL,
+    file_path VARCHAR(500),
+    file_size DOUBLE PRECISION,
     file_hash VARCHAR(64),            -- File hash for integrity check
     
-    -- CNV file metadata
-    software_version VARCHAR(100),
-    temperature_sn VARCHAR(50),
-    conductivity_sn VARCHAR(50),
-    number_of_scans INTEGER,
-    number_of_cycles INTEGER,
-    sample_interval DOUBLE PRECISION,
-    start_time TIMESTAMP WITH TIME ZONE,
-    end_time TIMESTAMP WITH TIME ZONE,
-    
-    -- Geographic metadata
-    nmea_latitude VARCHAR(50),
-    nmea_longitude VARCHAR(50),
-    initial_depth DOUBLE PRECISION,
-    
     -- Processing metadata
-    processed_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    status VARCHAR(20) DEFAULT 'processed',  -- pending, processed, error
-    error_message TEXT,
+    total_records DOUBLE PRECISION,
+    processed_records DOUBLE PRECISION,
+    processing_status VARCHAR(50),
     
-    -- Data statistics
-    total_records INTEGER,
-    min_datetime TIMESTAMP WITH TIME ZONE,
-    max_datetime TIMESTAMP WITH TIME ZONE,
-    min_depth DOUBLE PRECISION,
-    max_depth DOUBLE PRECISION,
-    min_latitude DOUBLE PRECISION,
-    max_latitude DOUBLE PRECISION,
-    min_longitude DOUBLE PRECISION,
-    max_longitude DOUBLE PRECISION
+    -- Timestamps
+    first_seen TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    last_processed TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
@@ -278,10 +246,10 @@ new_data = pd.DataFrame({
     'depth': [10.0, 15.0],
     'latitude': [-33.5, -33.6],
     'longitude': [115.0, 115.1],
-    'tv290c': [22.5, 22.3],
+    'tv290C': [22.5, 22.3],
     'sal00': [35.2, 35.1],
-    'sbeox0mm_l': [5.8, 5.7],
-    'fleco_afl': [1.2, 1.1],
+    'sbeox0Mm_L': [5.8, 5.7],
+    'flECO-AFL': [1.2, 1.1],
     'ph': [8.1, 8.0]
 })
 
@@ -391,7 +359,7 @@ record = OceanographicData(
     depth=10.0,
     latitude=-33.5,
     longitude=115.0,
-    tv290c=22.5,
+    tv290C=22.5,
     sal00=35.2
 )
 
@@ -482,7 +450,7 @@ record = OceanographicData(
     depth=10.0,
     latitude=-33.5,  # Valid latitude
     longitude=115.0,  # Valid longitude
-    tv290c=22.5
+    tv290C=22.5
 )
 
 # Validate data
@@ -566,7 +534,7 @@ conn_manager.connect()
 query = text("""
     SELECT 
         DATE_TRUNC('hour', datetime) as hour,
-        AVG(tv290c) as avg_temp,
+        AVG(tv290C) as avg_temp,
         COUNT(*) as record_count
     FROM oceanographic_data 
     WHERE datetime >= :start_date 
