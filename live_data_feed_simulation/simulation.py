@@ -2,7 +2,7 @@
 
 This module simulates a Sea-Bird CTD/aux sensors data stream and writes a
 realistic-looking .cnv file on disk, complete with a header block and rows of
-data at a configurable rate. It includes an interactive CLI and a
+data at a configurable rate. It includes an interactive map UI, CLI and a
 non-interactive mode for automated runs.
 """
 
@@ -12,8 +12,15 @@ import random
 import threading
 import time
 import sys
+import math
+import json
+import webbrowser
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from collections import deque
+from urllib.parse import urlparse, parse_qs
 from datetime import datetime, timezone
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Callable
 
 
 # --- CNV schema based on example file (17 variables) ---
@@ -85,6 +92,44 @@ SPAN_MAX = [
 BAD_FLAG = -9.990e-29
 
 
+# Minimal offline city/port lookup for convenience (no network dependency).
+# Note: This is intentionally small; extend as needed.
+CITY_COORDS = {
+    # Australia
+    "sydney": (-33.8688, 151.2093),
+    "melbourne": (-37.8136, 144.9631),
+    "brisbane": (-27.4698, 153.0251),
+    "perth": (-31.9523, 115.8613),
+    "fremantle": (-32.0569, 115.7439),
+    "adelaide": (-34.9285, 138.6007),
+    "hobart": (-42.8821, 147.3272),
+    "darwin": (-12.4634, 130.8456),
+    # NZ
+    "auckland": (-36.8485, 174.7633),
+    "wellington": (-41.2865, 174.7762),
+    "christchurch": (-43.5321, 172.6362),
+    # World sample ports
+    "singapore": (1.3521, 103.8198),
+    "hong kong": (22.3193, 114.1694),
+    "tokyo": (35.6762, 139.6503),
+    "shanghai": (31.2304, 121.4737),
+    "los angeles": (34.0522, -118.2437),
+    "san francisco": (37.7749, -122.4194),
+    "new york": (40.7128, -74.0060),
+    "miami": (25.7617, -80.1918),
+    "london": (51.5072, -0.1276),
+    "hamburg": (53.5511, 9.9937),
+    "rotterdam": (51.9244, 4.4777),
+}
+
+# Variable name helpers
+VAR_KEYS = [name.split(":")[0] for name in NAME_LIST]
+VAR_INDEX = {k: i for i, k in enumerate(VAR_KEYS)}
+VAR_INDEX_LC = {k.lower(): i for k, i in VAR_INDEX.items()}
+
+
+
+
 def _deg_to_degmin_str(lat_deg: float, lon_deg: float) -> Tuple[str, str]:
     """Convert decimal degrees to NMEA-like "DD MM.mm H" strings.
 
@@ -103,6 +148,266 @@ def _deg_to_degmin_str(lat_deg: float, lon_deg: float) -> Tuple[str, str]:
 def _utc_now_localstr() -> str:
     """Return current UTC timestamp formatted like the CNV headers expect."""
     return datetime.now(timezone.utc).strftime("%b %d %Y %H:%M:%S")
+
+
+def _run_route_picker_and_wait(cnv_path: Optional[str] = None, timeout_sec: float = 600.0):
+    """Start a tiny local server, open a browser map, and wait for a route.
+
+    Returns a dict with keys start_lat, start_lon, end_lat, end_lon or None on timeout.
+    """
+    doc_root = Path(__file__).resolve().parent
+    html_file = doc_root / "route_picker.html"
+    if not html_file.exists():
+        alt = doc_root / "offline" / "route_picker.html"
+        if alt.exists():
+            html_file = alt
+            doc_root = alt.parent
+        else:
+            print(f"[route] Missing {html_file}; cannot open route picker.")
+            return None
+
+    state = {
+        "event": threading.Event(),
+        "selection": None,
+        "doc_root": str(doc_root),
+        "rows": deque(maxlen=10000),
+        "lock": threading.Lock(),
+        "cnv_path": cnv_path,
+    }
+
+    class Handler(SimpleHTTPRequestHandler):
+        def log_message(self, format, *args):
+            # Quieter server
+            pass
+        def translate_path(self, path):
+            # Serve files from doc_root regardless of CWD
+            root = Path(state["doc_root"]).resolve()
+            # default behavior but rooted
+            rel = path.lstrip("/")
+            safe = Path(rel)
+            return str((root / safe).resolve())
+        def do_POST(self):
+            if self.path == "/set_route":
+                try:
+                    length = int(self.headers.get("Content-Length", "0"))
+                    raw = self.rfile.read(length)
+                    obj = json.loads(raw.decode("utf-8"))
+                    s = obj.get("start") or {}
+                    e = obj.get("end") or {}
+                    sp = obj.get("speed_knots")
+                    sel = {
+                        "start_lat": float(s.get("lat")),
+                        "start_lon": float(s.get("lon")),
+                        "end_lat": float(e.get("lat")),
+                        "end_lon": float(e.get("lon")),
+                    }
+                    if any(v is None for v in sel.values()):
+                        raise ValueError("missing")
+                    if sp is not None:
+                        try:
+                            sel["speed_knots"] = float(sp)
+                        except Exception:
+                            pass
+                    state["selection"] = sel
+                    state["event"].set()
+                    # Call reroute callback and ensure writer is running
+                    try:
+                        cb = globals().get("_ROUTE_REROUTE_CB")
+                        if cb:
+                            cb(sel)
+                    except Exception:
+                        pass
+                    try:
+                        ctrl = globals().get("_ROUTE_CONTROL_CB")
+                        if ctrl:
+                            ctrl("resume")
+                    except Exception:
+                        pass
+                    out = json.dumps({"ok": True}).encode("utf-8")
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self.send_header("Content-Length", str(len(out)))
+                    self.end_headers()
+                    self.wfile.write(out)
+                except Exception:
+                    self.send_response(400)
+                    self.end_headers()
+            elif self.path == "/control/pause":
+                try:
+                    cb = globals().get("_ROUTE_CONTROL_CB")
+                    if cb:
+                        cb("pause")
+                    out = json.dumps({"ok": True, "action": "pause"}).encode("utf-8")
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self.send_header("Content-Length", str(len(out)))
+                    self.end_headers()
+                    self.wfile.write(out)
+                except Exception:
+                    self.send_response(500)
+                    self.end_headers()
+            elif self.path == "/control/resume":
+                try:
+                    cb = globals().get("_ROUTE_CONTROL_CB")
+                    if cb:
+                        cb("resume")
+                    out = json.dumps({"ok": True, "action": "resume"}).encode("utf-8")
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self.send_header("Content-Length", str(len(out)))
+                    self.end_headers()
+                    self.wfile.write(out)
+                except Exception:
+                    self.send_response(500)
+                    self.end_headers()
+            elif self.path == "/control/clear":
+                try:
+                    cb = globals().get("_ROUTE_CONTROL_CB")
+                    if cb:
+                        cb("clear")
+                    out = json.dumps({"ok": True, "action": "clear"}).encode("utf-8")
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self.send_header("Content-Length", str(len(out)))
+                    self.end_headers()
+                    self.wfile.write(out)
+                except Exception:
+                    self.send_response(500)
+                    self.end_headers()
+            elif self.path == "/control/speed":
+                try:
+                    length = int(self.headers.get("Content-Length", "0"))
+                    raw = self.rfile.read(length)
+                    obj = json.loads(raw.decode("utf-8"))
+                    val = float(obj.get("speed_knots"))
+                    cb = globals().get("_ROUTE_SET_SPEED_CB")
+                    if cb:
+                        cb(val)
+                    out = json.dumps({"ok": True, "action": "speed", "speed_knots": val}).encode("utf-8")
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self.send_header("Content-Length", str(len(out)))
+                    self.end_headers()
+                    self.wfile.write(out)
+                except Exception:
+                    self.send_response(400)
+                    self.end_headers()
+            else:
+                self.send_response(404)
+                self.end_headers()
+        def do_GET(self):
+            parsed = urlparse(self.path)
+            if parsed.path == "/bootstrap":
+                # Try to read last lat/lon from existing CNV file if provided
+                path = state.get("cnv_path")
+                result = {"has_start": False}
+                try:
+                    if path and os.path.exists(path):
+                        last_lat, last_lon = _read_last_lat_lon(path)
+                        if last_lat is not None and last_lon is not None:
+                            result = {"has_start": True, "start_lat": last_lat, "start_lon": last_lon}
+                except Exception:
+                    result = {"has_start": False}
+                out = json.dumps(result).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(out)))
+                self.end_headers()
+                self.wfile.write(out)
+                return
+            if parsed.path == "/live/status":
+                with state["lock"]:
+                    last_scan = 0
+                    if state["rows"]:
+                        try:
+                            last_scan = int(state["rows"][-1][VAR_INDEX["scan"]])
+                        except Exception:
+                            last_scan = 0
+                    out = json.dumps({
+                        "ok": True,
+                        "rows": len(state["rows"]),
+                        "last_scan": last_scan,
+                    }).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(out)))
+                self.end_headers()
+                self.wfile.write(out)
+                return
+            if parsed.path == "/live/latest":
+                with state["lock"]:
+                    if not state["rows"]:
+                        self.send_response(204)
+                        self.end_headers()
+                        return
+                    obj = _row_to_obj(state["rows"][-1])
+                    out = json.dumps(obj).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(out)))
+                self.end_headers()
+                self.wfile.write(out)
+                return
+            if parsed.path == "/live/after":
+                qs = parse_qs(parsed.query or "")
+                try:
+                    after_scan = int(qs.get("scan", [0])[0])
+                except Exception:
+                    after_scan = 0
+                try:
+                    max_rows = int(qs.get("max", [200])[0])
+                except Exception:
+                    max_rows = 200
+                with state["lock"]:
+                    result = []
+                    for r in state["rows"]:
+                        try:
+                            sc = int(r[VAR_INDEX["scan"]])
+                        except Exception:
+                            sc = 0
+                        if sc > after_scan:
+                            result.append(_row_to_obj(r))
+                    if len(result) > max_rows:
+                        result = result[-max_rows:]
+                    out = json.dumps(result).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(out)))
+                self.end_headers()
+                self.wfile.write(out)
+                return
+            # default: static file
+            return super().do_GET()
+
+    # Bind to an available port on localhost
+    httpd = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    port = httpd.server_address[1]
+
+    def run_server():
+        try:
+            httpd.serve_forever(poll_interval=0.2)
+        except Exception:
+            pass
+
+    thr = threading.Thread(target=run_server, daemon=True)
+    thr.start()
+
+    url = f"http://127.0.0.1:{port}/route_picker.html"
+    print(f"[route] Opening map: {url}")
+    try:
+        webbrowser.open(url)
+    except Exception:
+        print("[route] Could not open browser automatically. Open the URL manually.")
+    # Wait for selection or timeout
+    got = state["event"].wait(timeout=timeout_sec)
+    # Do not shut down here; keep server alive for live view
+    if not got:
+        print("[route] Route picker timed out.")
+        return None
+    # Expose state to on_row callback via module global
+    global _ROUTE_LIVE_STATE
+    _ROUTE_LIVE_STATE = state
+    return state["selection"]
 
 
 def _format_header(
@@ -499,6 +804,130 @@ class RandomWalk:
         return 1.0e-12 if self._rng.random() < 0.1 else None  # 10% chance
 
 
+def _row_to_obj(row: List[float]) -> dict:
+    """Convert a numeric row list to a dict keyed by variable names."""
+    obj = {}
+    for i, key in enumerate(VAR_KEYS):
+        obj[key] = row[i]
+    return obj
+
+
+def _read_last_lat_lon(path: str) -> Tuple[Optional[float], Optional[float]]:
+    """Read the last data line from a CNV and extract lat/lon if present.
+
+    Returns (lat, lon) or (None, None) if not found or parse error.
+    """
+    last_line = ""
+    try:
+        with open(path, "r") as rf:
+            for line in rf:
+                if line.strip() and not line.startswith("*") and not line.startswith("#"):
+                    last_line = line
+        if last_line:
+            cols = last_line.split()
+            if len(cols) >= 16:
+                lat = float(cols[14])
+                lon = float(cols[15])
+                return lat, lon
+    except Exception:
+        pass
+    return None, None
+
+
+class MissionTrack:
+    """Straight-line mission track between two lat/lon points.
+
+    - Advances position at constant speed along the line from (start_lat, start_lon)
+      to (end_lat, end_lon).
+    - If ``pingpong`` is True, bounces at the ends; otherwise clamps at the end.
+    - Speed is specified in knots for user friendliness; internal uses m/s.
+    - Uses a simple local-plane approximation suitable for small mission spans.
+    """
+
+    KNOT_TO_MPS = 0.514444
+
+    def __init__(
+        self,
+        start_lat: float,
+        start_lon: float,
+        end_lat: float,
+        end_lon: float,
+        speed_knots: float = 4.0,
+        pingpong: bool = False,
+    ):
+        self.start_lat = start_lat
+        self.start_lon = start_lon
+        self.end_lat = end_lat
+        self.end_lon = end_lon
+        self.speed_mps = max(0.0, float(speed_knots)) * self.KNOT_TO_MPS
+        self.pingpong = bool(pingpong)
+
+        # Precompute track geometry
+        self._dlat_deg = self.end_lat - self.start_lat
+        self._dlon_deg = self.end_lon - self.start_lon
+        # Mid-lat for lon scaling
+        self._mid_lat_rad = (self.start_lat + self.end_lat) / 2.0 * (3.141592653589793 / 180.0)
+        m_per_deg_lat = 111320.0  # rough average
+        m_per_deg_lon = 111320.0 * max(0.000001, abs(math.cos(self._mid_lat_rad)))
+        dlat_m = self._dlat_deg * m_per_deg_lat
+        dlon_m = self._dlon_deg * m_per_deg_lon
+        self._length_m = (dlat_m ** 2 + dlon_m ** 2) ** 0.5
+        # Degrees moved per meter along the track
+        self._deg_lat_per_m = (self._dlat_deg / self._length_m) if self._length_m > 0 else 0.0
+        self._deg_lon_per_m = (self._dlon_deg / self._length_m) if self._length_m > 0 else 0.0
+
+        # Distance progressed from start along the line in meters and direction (1 or -1)
+        self._s_m = 0.0
+        self._dir = 1
+
+    def reset_position(self, lat: float, lon: float):
+        """Align the along-track distance to the provided lat/lon.
+
+        Projects the vector (start->current) onto the track direction and
+        clamps within [0, length].
+        """
+        if self._length_m <= 0:
+            self._s_m = 0.0
+            return
+        # Work purely in degrees to find fraction, then scale by length_m
+        dv_lat = lat - self.start_lat
+        dv_lon = lon - self.start_lon
+        denom = (self._dlat_deg ** 2 + self._dlon_deg ** 2)
+        if denom <= 0:
+            self._s_m = 0.0
+            return
+        t = (dv_lat * self._dlat_deg + dv_lon * self._dlon_deg) / denom
+        t = max(0.0, min(1.0, t))
+        self._s_m = t * self._length_m
+
+    def step(self, dt: float) -> Tuple[float, float]:
+        if self._length_m <= 0:
+            # Degenerate: stay at end
+            return self.end_lat, self.end_lon
+
+        ds = self.speed_mps * max(0.0, dt) * self._dir
+        self._s_m += ds
+        if self.pingpong:
+            # Reflect at ends
+            if self._s_m > self._length_m:
+                over = self._s_m - self._length_m
+                self._s_m = self._length_m - over
+                self._dir *= -1
+            elif self._s_m < 0.0:
+                self._s_m = -self._s_m
+                self._dir *= -1
+        else:
+            # Clamp at ends
+            if self._s_m > self._length_m:
+                self._s_m = self._length_m
+            if self._s_m < 0.0:
+                self._s_m = 0.0
+
+        lat = self.start_lat + self._deg_lat_per_m * self._s_m
+        lon = self.start_lon + self._deg_lon_per_m * self._s_m
+        return lat, lon
+
+
 class CNVSimulator:
     """Continuously write simulated scans to a CNV file.
 
@@ -519,6 +948,12 @@ class CNVSimulator:
         station: str = "7",
         start_lat: float = -35.57462,
         start_lon: float = 154.30952,
+        # Mission track options
+        end_lat: Optional[float] = None,
+        end_lon: Optional[float] = None,
+        track_speed_knots: float = 6.0,
+        track_pingpong: bool = True,
+        on_row: Optional[Callable[[List[float]], None]] = None,
     ):
         self.out_path = out_path
         self.interval = interval
@@ -538,6 +973,8 @@ class CNVSimulator:
         self._pumps = 1
         self._lat = start_lat
         self._lon = start_lon
+        self._track = None  # set below if end_lat/lon provided
+        self._on_row = on_row
 
         # Initialize signal values at mid-spans for a stable starting point.
         self._t0 = (SPAN_MIN[0] + SPAN_MAX[0]) / 2
@@ -551,6 +988,25 @@ class CNVSimulator:
         self._cstar = (SPAN_MIN[8] + SPAN_MAX[8]) / 2
         self._sal0 = (SPAN_MIN[9] + SPAN_MAX[9]) / 2
         self._sal1 = (SPAN_MIN[10] + SPAN_MAX[10]) / 2
+
+        # Persist track defaults
+        self._track_speed_knots = track_speed_knots
+        self._track_pingpong = track_pingpong
+
+        # Setup mission track if configured
+        try:
+            if end_lat is not None and end_lon is not None:
+                self._track = MissionTrack(
+                    start_lat=start_lat,
+                    start_lon=start_lon,
+                    end_lat=end_lat,
+                    end_lon=end_lon,
+                    speed_knots=self._track_speed_knots,
+                    pingpong=self._track_pingpong,
+                )
+        except Exception:
+            # If track setup fails for any reason, fall back to drift
+            self._track = None
 
         if append and os.path.exists(out_path):
             self._open_for_append()
@@ -614,6 +1070,12 @@ class CNVSimulator:
                 self._cstar = float(cols[8])
                 self._sal0 = float(cols[9])
                 self._sal1 = float(cols[10])
+                # Align track position with last known lat/lon if a track is active
+                if self._track is not None:
+                    try:
+                        self._track.reset_position(self._lat, self._lon)
+                    except Exception:
+                        pass
             except Exception:
                 # If parsing fails, fall back to safe defaults (fresh counters).
                 self._scan = 1
@@ -656,6 +1118,10 @@ class CNVSimulator:
         if self._fh:
             self._fh.flush()
             self._fh.close()
+    
+    def set_on_row(self, cb: Optional[Callable[[List[float]], None]]):
+        """Register or clear a live row callback."""
+        self._on_row = cb
 
     def switch_to_new_file(self, new_path: str):
         """Close current file and start a brand new CNV at ``new_path``."""
@@ -674,6 +1140,64 @@ class CNVSimulator:
                 self._fh.close()
             self.out_path = path
             self._open_for_append()
+
+    def clear_current_file(self):
+        """Delete the current CNV file and start a fresh one with a new header.
+
+        Safe to call while running; acquires internal lock and resets counters.
+        """
+        # Pause writer so we don't race file operations
+        self._run.clear()
+        with self._lock:
+            if self._fh:
+                try:
+                    self._fh.flush()
+                except Exception:
+                    pass
+                try:
+                    self._fh.close()
+                except Exception:
+                    pass
+            try:
+                if os.path.exists(self.out_path):
+                    os.remove(self.out_path)
+            except Exception:
+                # If deletion fails, proceed to truncate via _start_new_file
+                pass
+            self._start_new_file()
+        # Keep paused; caller can resume explicitly (route picker does this on new route)
+
+    def update_track(self, start_lat: float, start_lon: float, end_lat: float, end_lon: float,
+                     speed_knots: Optional[float] = None, pingpong: Optional[bool] = None):
+        """Atomically update the mission track. If simulator is running, takes effect immediately.
+
+        If ``speed_knots`` or ``pingpong`` are None, keep previous values.
+        """
+        with self._lock:
+            if speed_knots is not None:
+                self._track_speed_knots = float(speed_knots)
+            if pingpong is not None:
+                self._track_pingpong = bool(pingpong)
+            # Immediately move current position to provided start
+            self._lat = start_lat
+            self._lon = start_lon
+            self._track = MissionTrack(
+                start_lat=start_lat,
+                start_lon=start_lon,
+                end_lat=end_lat,
+                end_lon=end_lon,
+                speed_knots=self._track_speed_knots,
+                pingpong=self._track_pingpong,
+            )
+
+    def set_track_speed(self, speed_knots: float):
+        with self._lock:
+            try:
+                self._track_speed_knots = float(speed_knots)
+            except Exception:
+                return
+            if self._track is not None:
+                self._track.speed_mps = self._track_speed_knots * MissionTrack.KNOT_TO_MPS
 
     def status(self) -> str:
         """Return a short human-readable summary of current state."""
@@ -707,6 +1231,11 @@ class CNVSimulator:
                 row = self._next_row()
                 self._fh.write(_fmt_row(row))
                 self._count_written += 1
+                if self._on_row is not None:
+                    try:
+                        self._on_row(row)
+                    except Exception:
+                        pass
 
     # --- Data generation ---
     def _next_row(self) -> List[float]:
@@ -734,9 +1263,12 @@ class CNVSimulator:
         self._sal0 = self._rng.step(self._sal0, SPAN_MIN[9], SPAN_MAX[9], 0.001)
         self._sal1 = self._rng.step(self._sal1, SPAN_MIN[10], SPAN_MAX[10], 0.001)
 
-        # Latitude/longitude drift slowly within their spans.
-        self._lat = self._rng.step(self._lat, SPAN_MIN[14], SPAN_MAX[14], 0.00005)
-        self._lon = self._rng.step(self._lon, SPAN_MIN[15], SPAN_MAX[15], 0.00005)
+        # Latitude/longitude: follow mission track if set, else drift slowly.
+        if self._track is not None:
+            self._lat, self._lon = self._track.step(self.interval)
+        else:
+            self._lat = self._rng.step(self._lat, SPAN_MIN[14], SPAN_MAX[14], 0.00005)
+            self._lon = self._rng.step(self._lon, SPAN_MIN[15], SPAN_MAX[15], 0.00005)
 
         # Pump is constant (1), flag is always 0; increment time/scan counters.
         row = [
@@ -763,7 +1295,7 @@ class CNVSimulator:
         return row
 
 
-def interactive_cli(default_path: str, autostart: bool = True):
+def interactive_cli(default_path: str, autostart: bool = True, **sim_kwargs):
     """Simple REPL to control the simulator during manual runs.
 
     Commands:
@@ -776,8 +1308,34 @@ def interactive_cli(default_path: str, autostart: bool = True):
     print("CNV live-feed simulator. Commands: start <path>|append <path>|new <path>, pause, resume, status, rate <hz>, stop/quit")
     sim: Optional[CNVSimulator] = None
     if autostart:
-        sim = CNVSimulator(default_path, append=False)
+        sim = CNVSimulator(default_path, append=False, **sim_kwargs)
         sim.start()
+        # If route picker server is active, expose a reroute callback bound to this sim
+        if globals().get("_ROUTE_LIVE_STATE") is not None:
+            def _reroute(sel: dict):
+                s_lat = float(sel.get("start_lat", sim._lat))
+                s_lon = float(sel.get("start_lon", sim._lon))
+                e_lat = float(sel.get("end_lat", sim._lat))
+                e_lon = float(sel.get("end_lon", sim._lon))
+                spd = sel.get("speed_knots")
+                sim.update_track(s_lat, s_lon, e_lat, e_lon, speed_knots=spd)
+            globals()["_ROUTE_REROUTE_CB"] = _reroute
+            def _control(action: str):
+                if action == "pause":
+                    sim.pause()
+                elif action == "resume":
+                    sim.resume()
+                elif action == "clear":
+                    sim.clear_current_file()
+                    st = globals().get("_ROUTE_LIVE_STATE")
+                    if st:
+                        try:
+                            with st["lock"]:
+                                st["rows"].clear()
+                        except Exception:
+                            pass
+            globals()["_ROUTE_CONTROL_CB"] = _control
+            globals()["_ROUTE_SET_SPEED_CB"] = lambda val: sim.set_track_speed(val)
         print(f"Auto-started. Writing to: {default_path}")
     while True:
         try:
@@ -802,16 +1360,66 @@ def interactive_cli(default_path: str, autostart: bool = True):
             path = arg or default_path
             if sim:
                 sim.stop()
-            sim = CNVSimulator(path, append=False)
+            sim = CNVSimulator(path, append=False, **sim_kwargs)
             sim.start()
+            if globals().get("_ROUTE_LIVE_STATE") is not None:
+                def _reroute(sel: dict):
+                    s_lat = float(sel.get("start_lat", sim._lat))
+                    s_lon = float(sel.get("start_lon", sim._lon))
+                    e_lat = float(sel.get("end_lat", sim._lat))
+                    e_lon = float(sel.get("end_lon", sim._lon))
+                    spd = sel.get("speed_knots")
+                    sim.update_track(s_lat, s_lon, e_lat, e_lon, speed_knots=spd)
+                globals()["_ROUTE_REROUTE_CB"] = _reroute
+                def _control(action: str):
+                    if action == "pause":
+                        sim.pause()
+                    elif action == "resume":
+                        sim.resume()
+                    elif action == "clear":
+                        sim.clear_current_file()
+                        st = globals().get("_ROUTE_LIVE_STATE")
+                        if st:
+                            try:
+                                with st["lock"]:
+                                    st["rows"].clear()
+                            except Exception:
+                                pass
+                globals()["_ROUTE_CONTROL_CB"] = _control
+                globals()["_ROUTE_SET_SPEED_CB"] = lambda val: sim.set_track_speed(val)
             print(f"Started new file: {path}")
         elif op == "new":
             path = arg or default_path
             if not sim:
-                sim = CNVSimulator(path, append=False)
+                sim = CNVSimulator(path, append=False, **sim_kwargs)
             else:
                 sim.switch_to_new_file(path)
             sim.start()
+            if globals().get("_ROUTE_LIVE_STATE") is not None:
+                def _reroute(sel: dict):
+                    s_lat = float(sel.get("start_lat", sim._lat))
+                    s_lon = float(sel.get("start_lon", sim._lon))
+                    e_lat = float(sel.get("end_lat", sim._lat))
+                    e_lon = float(sel.get("end_lon", sim._lon))
+                    spd = sel.get("speed_knots")
+                    sim.update_track(s_lat, s_lon, e_lat, e_lon, speed_knots=spd)
+                globals()["_ROUTE_REROUTE_CB"] = _reroute
+                def _control(action: str):
+                    if action == "pause":
+                        sim.pause()
+                    elif action == "resume":
+                        sim.resume()
+                    elif action == "clear":
+                        sim.clear_current_file()
+                        st = globals().get("_ROUTE_LIVE_STATE")
+                        if st:
+                            try:
+                                with st["lock"]:
+                                    st["rows"].clear()
+                            except Exception:
+                                pass
+                globals()["_ROUTE_CONTROL_CB"] = _control
+                globals()["_ROUTE_SET_SPEED_CB"] = lambda val: sim.set_track_speed(val)
             print(f"Switched to new file: {path}")
         elif op == "append":
             path = arg or default_path
@@ -819,10 +1427,26 @@ def interactive_cli(default_path: str, autostart: bool = True):
                 print(f"No such file to append: {path}")
                 continue
             if not sim:
-                sim = CNVSimulator(path, append=True)
+                sim = CNVSimulator(path, append=True, **sim_kwargs)
             else:
                 sim.switch_to_append_file(path)
             sim.start()
+            if globals().get("_ROUTE_LIVE_STATE") is not None:
+                def _reroute(sel: dict):
+                    s_lat = float(sel.get("start_lat", sim._lat))
+                    s_lon = float(sel.get("start_lon", sim._lon))
+                    e_lat = float(sel.get("end_lat", sim._lat))
+                    e_lon = float(sel.get("end_lon", sim._lon))
+                    sim.update_track(s_lat, s_lon, e_lat, e_lon)
+                globals()["_ROUTE_REROUTE_CB"] = _reroute
+                def _control(action: str):
+                    if action == "pause":
+                        sim.pause()
+                    elif action == "resume":
+                        sim.resume()
+                    elif action == "clear":
+                        sim.clear_current_file()
+                globals()["_ROUTE_CONTROL_CB"] = _control
             print(f"Appending to existing: {path}")
         elif op == "pause":
             if sim:
@@ -868,17 +1492,126 @@ def main():
     parser.add_argument("--file", dest="file", default=default_path)
     parser.add_argument("--hz", dest="hz", type=float, default=24.0, help="Output rate in Hz (default 24Hz)")
     parser.add_argument("--seed", dest="seed", type=int, default=None, help="Random seed for reproducibility")
+    # Mission track options
+    parser.add_argument("--start-lat", type=float, default=-35.57462, help="Mission start latitude [deg]")
+    parser.add_argument("--start-lon", type=float, default=154.30952, help="Mission start longitude [deg]")
+    parser.add_argument("--start-city", type=str, default=None, help="Mission start city name (overrides --start-lat/--start-lon if known)")
+    parser.add_argument("--end-lat", type=float, default=None, help="Mission end latitude [deg]; enable track when set with --end-lon")
+    parser.add_argument("--end-lon", type=float, default=None, help="Mission end longitude [deg]; enable track when set with --end-lat")
+    parser.add_argument("--end-city", type=str, default=None, help="Mission end city name (enables track; overrides --end-lat/--end-lon if known)")
+    parser.add_argument("--speed-knots", type=float, default=6.0, help="Track speed in knots (default 6.0) when mission track enabled")
+    # Default pingpong ON; allow disabling with --no-pingpong
+    parser.add_argument("--pingpong", dest="pingpong", action="store_true", default=True, help="Bounce back and forth on the mission track (default ON)")
+    parser.add_argument("--no-pingpong", dest="pingpong", action="store_false", help="Do not bounce; stop at the end of the mission track")
     parser.add_argument("--append", action="store_true", help="Append to existing file instead of starting a new one")
     parser.add_argument("--noninteractive", action="store_true", help="Run non-interactively for --count scans")
     parser.add_argument("--count", type=int, default=0, help="When --noninteractive, how many scans to write (0=forever)")
+    # Route picker (opens a local map to choose start/end then continues)
+    parser.add_argument("--route-picker", action="store_true", help="Open a browser map to select start/end and use them")
+    # Live display
+    parser.add_argument("--live", action="store_true", help="Print periodic live row summaries to stdout")
+    parser.add_argument("--live-every", type=int, default=24, help="Print every N rows when --live is set (default 24)")
+    parser.add_argument(
+        "--live-fields",
+        type=str,
+        default="scan,timeS,latitude,longitude,prDM,t090C,sal00",
+        help="Comma list of fields to print when --live is set",
+    )
     args = parser.parse_args()
 
     os.makedirs(os.path.dirname(args.file) or ".", exist_ok=True)
 
+    # Resolve city names to coordinates if provided (lat/lon flags take precedence if also set explicitly)
+    start_lat = args.start_lat
+    start_lon = args.start_lon
+    if args.start_city:
+        key = args.start_city.strip().lower()
+        if key in CITY_COORDS:
+            start_lat, start_lon = CITY_COORDS[key]
+        else:
+            print(f"[warn] Unknown start city: {args.start_city}. Using --start-lat/--start-lon.", file=sys.stderr)
+
+    end_lat = args.end_lat
+    end_lon = args.end_lon
+    if args.end_city:
+        key = args.end_city.strip().lower()
+        if key in CITY_COORDS:
+            end_lat, end_lon = CITY_COORDS[key]
+        else:
+            print(f"[warn] Unknown end city: {args.end_city}. Use --end-lat/--end-lon to specify.", file=sys.stderr)
+    # If requested, open a local route picker and wait for selection.
+    if args.route_picker:
+        selected = _run_route_picker_and_wait(args.file)
+        if selected is not None:
+            start_lat = selected.get("start_lat", start_lat)
+            start_lon = selected.get("start_lon", start_lon)
+            end_lat = selected.get("end_lat", end_lat)
+            end_lon = selected.get("end_lon", end_lon)
+            print(f"[route] start=({start_lat:.5f},{start_lon:.5f}) end=({end_lat:.5f},{end_lon:.5f})")
+        else:
+            print("[route] No selection received; continuing with existing coordinates.")
+
+    # Setup live on_row callback composition
+    def _compose_callbacks(*cbs):
+        def _cb(row):
+            for f in cbs:
+                if f:
+                    try:
+                        f(row)
+                    except Exception:
+                        pass
+        return _cb
+
+    live_cb = None
+    if args.live:
+        fields = [s.strip() for s in args.live_fields.split(",") if s.strip()]
+        live_cb = LivePrinter(every=args.live_every, fields=fields)
+    route_cb = None
+    if args.route_picker:
+        def route_cb(row):
+            st = globals().get("_ROUTE_LIVE_STATE")
+            if not st:
+                return
+            try:
+                with st["lock"]:
+                    st["rows"].append(row)
+            except Exception:
+                pass
+
+    on_row_cb = _compose_callbacks(live_cb, route_cb)
+
     if args.noninteractive:
         # Headless mode: run until Ctrl+C or until --count scans are written.
-        sim = CNVSimulator(args.file, interval=1.0/args.hz, seed=args.seed, append=args.append)
+        sim = CNVSimulator(
+            args.file,
+            interval=1.0/args.hz,
+            seed=args.seed,
+            append=args.append,
+            start_lat=start_lat,
+            start_lon=start_lon,
+            end_lat=end_lat,
+            end_lon=end_lon,
+            track_speed_knots=args.speed_knots,
+            track_pingpong=args.pingpong,
+            on_row=on_row_cb,
+        )
         sim.start()
+        # Expose reroute callback for route picker page
+        if args.route_picker:
+            def _reroute(sel: dict):
+                # Use provided start; if not present, fall back to current position
+                s_lat = float(sel.get("start_lat", sim._lat))
+                s_lon = float(sel.get("start_lon", sim._lon))
+                e_lat = float(sel.get("end_lat", sim._lat))
+                e_lon = float(sel.get("end_lon", sim._lon))
+                sim.update_track(s_lat, s_lon, e_lat, e_lon)
+            globals()["_ROUTE_REROUTE_CB"] = _reroute
+            def _control(action: str):
+                if action == "pause":
+                    sim.pause()
+                elif action == "resume":
+                    sim.resume()
+            globals()["_ROUTE_CONTROL_CB"] = _control
         try:
             if args.count <= 0:
                 while True:
@@ -896,8 +1629,37 @@ def main():
         # If stdin is not interactive (e.g., launched by a non-TTY tool),
         # keep generating until Ctrl+C instead of quitting on EOF.
         if not sys.stdin.isatty():
-            sim = CNVSimulator(args.file, interval=1.0/args.hz, seed=args.seed, append=args.append)
+            sim = CNVSimulator(
+                args.file,
+                interval=1.0/args.hz,
+                seed=args.seed,
+                append=args.append,
+                start_lat=start_lat,
+                start_lon=start_lon,
+                end_lat=end_lat,
+                end_lon=end_lon,
+                track_speed_knots=args.speed_knots,
+                track_pingpong=args.pingpong,
+                on_row=on_row_cb,
+            )
             sim.start()
+            if args.route_picker:
+                def _reroute(sel: dict):
+                    s_lat = float(sel.get("start_lat", sim._lat))
+                    s_lon = float(sel.get("start_lon", sim._lon))
+                    e_lat = float(sel.get("end_lat", sim._lat))
+                    e_lon = float(sel.get("end_lon", sim._lon))
+                    spd = sel.get("speed_knots")
+                    sim.update_track(s_lat, s_lon, e_lat, e_lon, speed_knots=spd)
+                globals()["_ROUTE_REROUTE_CB"] = _reroute
+                def _control(action: str):
+                    if action == "pause":
+                        sim.pause()
+                    elif action == "resume":
+                        sim.resume()
+                    # Non-interactive/TTY path does not expose clear here
+                globals()["_ROUTE_CONTROL_CB"] = _control
+                globals()["_ROUTE_SET_SPEED_CB"] = lambda val: sim.set_track_speed(val)
             print(f"Non-interactive stdin detected. Writing to: {args.file}. Press Ctrl+C to stop.")
             try:
                 while True:
@@ -909,7 +1671,19 @@ def main():
         else:
             # Interactive terminal: start immediately and run until stop/quit.
             try:
-                interactive_cli(args.file, autostart=True)
+                # Start interactive CLI directly (autostarted). Reroute/control callbacks
+                # are bound inside interactive_cli when route picker server is active.
+                interactive_cli(
+                    args.file,
+                    autostart=True,
+                    start_lat=start_lat,
+                    start_lon=start_lon,
+                    end_lat=end_lat,
+                    end_lon=end_lon,
+                    track_speed_knots=args.speed_knots,
+                    track_pingpong=args.pingpong,
+                    on_row=on_row_cb,
+                )
             except KeyboardInterrupt:
                 # Graceful shutdown on Ctrl+C
                 print("\nInterrupted. Exiting.")
@@ -917,3 +1691,56 @@ def main():
 
 if __name__ == "__main__":
     main()
+# Short variable keys matching column order (before ':')
+VAR_KEYS = [name.split(":")[0] for name in NAME_LIST]
+VAR_INDEX = {k: i for i, k in enumerate(VAR_KEYS)}
+VAR_INDEX_LC = {k.lower(): i for k, i in VAR_INDEX.items()}
+
+
+class LivePrinter:
+    """Prints a compact summary of selected fields every N rows.
+
+    Called from the writer thread; keep it fast and robust.
+    """
+
+    def __init__(self, every: int = 24, fields: Optional[List[str]] = None):
+        self.every = max(1, int(every))
+        self._n = 0
+        default = ["scan", "timeS", "latitude", "longitude", "prDM", "t090C", "sal00"]
+        fields = fields or default
+        indices = []
+        labels = []
+        for f in fields:
+            key = f.strip()
+            if not key:
+                continue
+            idx = VAR_INDEX_LC.get(key.lower())
+            if idx is not None:
+                indices.append(idx)
+                labels.append(VAR_KEYS[idx])
+        self._indices = indices
+        self._labels = labels
+
+    def __call__(self, row: List[float]):
+        self._n += 1
+        if (self._n % self.every) != 0:
+            return
+        parts = []
+        for label, idx in zip(self._labels, self._indices):
+            val = row[idx]
+            if label in ("latitude", "longitude"):
+                parts.append(f"{label}={val:.5f}")
+            elif label in ("timeS",):
+                parts.append(f"{label}={val:.3f}")
+            elif label in ("scan", "pumps"):
+                parts.append(f"{label}={int(val)}")
+            elif label in ("prDM",):
+                parts.append(f"{label}={val:.2f}")
+            elif label in ("t090C", "t190C", "sal00", "sal11", "CStarTr0"):
+                parts.append(f"{label}={val:.3f}")
+            else:
+                parts.append(f"{label}={val}")
+        try:
+            print("live:", ", ".join(parts), flush=True)
+        except Exception:
+            pass
