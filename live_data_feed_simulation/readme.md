@@ -5,8 +5,11 @@ This simulator produces a live `.cnv` file that looks like a Sea‑Bird CTD data
 ## Primary Mode: Route Picker (Map UI)
 
 Launch the simulator with the map UI:
-
+Mac User
 - `python3 live_data_feed_simulation/simulation.py --route-picker`
+
+Windows User
+- `py live_data_feed_simulation/simulation.py --route-picker`
 
 What you’ll see and do:
 

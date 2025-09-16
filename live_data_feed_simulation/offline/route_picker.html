@@ -10,7 +10,6 @@
     .panel { position: absolute; top: 10px; left: 10px; z-index: 1000; background: rgba(0,0,0,0.75); color: #fff; padding: 10px 12px; border-radius: 6px; font-family: sans-serif; font-size: 14px; max-width: 480px; }
     .panel.live { left: auto; right: 10px; min-width: 260px; max-width: 320px; }
     .row { margin: 6px 0; }
-    .code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre-wrap; background: #111; padding: 8px; border-radius: 4px; }
     button { cursor: pointer; padding: 6px 10px; border-radius: 4px; border: 1px solid #888; background: #2d89ef; color: #fff; }
     button.secondary { background: #444; }
     .pin { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; box-shadow: 0 0 0 2px #fff; }
@@ -37,18 +36,10 @@
       }
 
       function refresh() {
-        const cmd = document.getElementById('cmd');
-        const has = start && end;
-        const sp = parseFloat(document.getElementById('speed').value || '6');
-        cmd.textContent = has
-          ? `python3 Live_data_feed_simulation/simulation.py \\
-  --start-lat ${start.lat.toFixed(5)} --start-lon ${start.lng.toFixed(5)} \\
-  --end-lat ${end.lat.toFixed(5)} --end-lon ${end.lng.toFixed(5)} \\
-  --speed-knots ${sp}`
-          : '# Click map: START then END';
-        document.getElementById('copy').disabled = !has;
-        // Clear button removed; no state to toggle
-        document.getElementById('send').disabled = !has;
+        const hasRoute = Boolean(start && end);
+        const speedValue = parseFloat(document.getElementById('speed').value || '0');
+        const validSpeed = !Number.isNaN(speedValue) && speedValue > 0;
+        document.getElementById('send').disabled = !(hasRoute && validSpeed);
       }
 
       function setStart(latlng) {
@@ -86,11 +77,6 @@
           setStart(e.latlng); end = null; if (endMarker) { endMarker.remove(); endMarker=null; }
         }
         draw();
-      });
-
-      document.getElementById('copy').addEventListener('click', async () => {
-        try { await navigator.clipboard.writeText(document.getElementById('cmd').textContent); alert('Copied'); }
-        catch (e) { alert('Copy failed. Select text and copy.'); }
       });
 
       // Bootstrap: ask server for last known lat/lon in existing CNV
@@ -213,15 +199,13 @@
     <div class="row"><strong>Route Picker</strong></div>
     <div class="row">Click map: first = START, second = END. Drag markers to adjust.</div>
     <div class="row">
-      <button id="copy">Copy CLI</button>
-      <label style="margin-left:8px;color:#ccc">Speed (kn): <input id="speed" type="number" min="0.1" step="0.1" value="5000" style="width:80px"></label>
+      <label style="color:#ccc">Speed (kn): <input id="speed" type="number" min="0.1" step="0.1" value="5000" style="width:80px"></label>
       <button id="send">Start in Simulator</button>
       <button id="pause" class="secondary">Pause</button>
       <button id="resume">Resume</button>
       <button id="clearfile" class="secondary">Clear File</button>
       <button id="follow">Follow Ship</button>
     </div>
-    <div class="row code" id="cmd"># Click map: START then END</div>
   </div>
   <div class="panel live" id="livepanel" style="display:none">
     <div class="row"><strong>Live Data</strong></div>
