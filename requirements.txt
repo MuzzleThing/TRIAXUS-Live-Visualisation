@@ -16,5 +16,10 @@ scipy>=1.9.0  # For data interpolation
 dynaconf>=3.2.0  # Modern configuration management
 pyyaml>=6.0  # YAML file parsing (fallback for dynaconf)
 
-# Development dependencies (optional)
+# Database dependencies
+psycopg2-binary>=2.9.0  # PostgreSQL adapter
+sqlalchemy>=2.0.0       # SQL toolkit and ORM
+
+# Development dependencies
 black>=22.0.0  # Code formatting tool
+pytest>=7.0.0  # Testing framework

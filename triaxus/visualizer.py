@@ -247,10 +247,6 @@ class TriaxusVisualizer:
         """Get recommendations for which plots to create based on data"""
         return self.factory.get_plotter_recommendations(list(data.columns), data.shape)
 
-    def get_data_summary(self, data: pd.DataFrame) -> Dict[str, Any]:
-        """Get summary of the data"""
-        return self.data_processor.get_data_summary(data)
-
     def validate_data(self, data: pd.DataFrame, plot_type: str) -> bool:
         """Validate data for a specific plot type"""
         try:
