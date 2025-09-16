@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Route Picker</title>
+  <link rel="stylesheet" href="leaflet.css" />
+  <style>
+    html, body, #map { height: 100%; margin: 0; }
+    .panel { position: absolute; top: 10px; left: 10px; z-index: 1000; background: rgba(0,0,0,0.75); color: #fff; padding: 10px 12px; border-radius: 6px; font-family: sans-serif; font-size: 14px; max-width: 480px; }
+    .panel.live { left: auto; right: 10px; min-width: 260px; max-width: 320px; }
+    .row { margin: 6px 0; }
+    .code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre-wrap; background: #111; padding: 8px; border-radius: 4px; }
+    button { cursor: pointer; padding: 6px 10px; border-radius: 4px; border: 1px solid #888; background: #2d89ef; color: #fff; }
+    button.secondary { background: #444; }
+    .pin { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; box-shadow: 0 0 0 2px #fff; }
+    .pin.start { background: #00bcd4; }
+    .pin.end { background: #f44336; }
+    .pin.ship { background: #4caf50; width: 28px; height: 28px; }
+    .kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; }
+    .kv .k { color: #a0aec0; }
+    .kv .v { color: #e2e8f0; font-weight: 600; }
+    .btn-active { outline: 2px solid #fff; box-shadow: 0 0 0 2px #4caf50 inset; }
+  </style>
+  <script src="leaflet.js"></script>
+  <script>
+    let startMarker = null, endMarker = null, shipMarker = null;
+    let walkedLine = null, toWalkLine = null;
+    let start = null, end = null, live = false, lastScan = 0, trackLine = null, trackCoords = [];
+    let followShip = false, selectionLocked = false, pollTimer = null;
+    function init() {
+      const map = L.map('map', { center: [-32.0, 114.0], zoom: 5, zoomControl: true, attributionControl: true });
+      try {
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
+      } catch (e) {
+        // offline tiles not available; proceed without base layer
+      }
+
+      function refresh() {
+        const cmd = document.getElementById('cmd');
+        const has = start && end;
+        const sp = parseFloat(document.getElementById('speed').value || '6');
+        cmd.textContent = has
+          ? `python3 Live_data_feed_simulation/simulation.py \\
+  --start-lat ${start.lat.toFixed(5)} --start-lon ${start.lng.toFixed(5)} \\
+  --end-lat ${end.lat.toFixed(5)} --end-lon ${end.lng.toFixed(5)} \\
+  --speed-knots ${sp}`
+          : '# Click map: START then END';
+        document.getElementById('copy').disabled = !has;
+        // Clear button removed; no state to toggle
+        document.getElementById('send').disabled = !has;
+      }
+
+      function setStart(latlng) {
+        start = latlng;
+        if (!startMarker) startMarker = L.marker(latlng, { draggable: true, zIndexOffset: 1000, icon: L.divIcon({ className: 'start-pin', html: '<div class="pin start">S</div>', iconSize: [24,24], iconAnchor: [12,12] }) }).addTo(map).bindTooltip('START', {permanent: true});
+        startMarker.setLatLng(latlng);
+        startMarker.on('dragend', e => { start = e.target.getLatLng(); draw(); });
+      }
+      function setEnd(latlng) {
+        end = latlng;
+        if (!endMarker) endMarker = L.marker(latlng, { draggable: true, zIndexOffset: 1000, icon: L.divIcon({ className: 'end-pin', html: '<div class="pin end">E</div>', iconSize: [24,24], iconAnchor: [12,12] }) }).addTo(map).bindTooltip('END', {permanent: true});
+        endMarker.setLatLng(latlng);
+        endMarker.on('dragend', e => { end = e.target.getLatLng(); draw(); });
+      }
+      function draw() {
+        if (walkedLine) { walkedLine.remove(); walkedLine = null; }
+        if (toWalkLine) { toWalkLine.remove(); toWalkLine = null; }
+        if (start && end) {
+          const sll = (live && shipMarker) ? shipMarker.getLatLng() : start;
+          walkedLine = L.polyline([start, sll], { color: '#ffa726', weight: 3 }).addTo(map);
+          toWalkLine = L.polyline([sll, end], { color: '#64b5f6', weight: 3, dashArray: '8,4' }).addTo(map);
+          const bounds = L.latLngBounds([start, end]);
+          map.fitBounds(bounds, { padding: [40,40] });
+        }
+        refresh();
+      }
+
+      map.on('click', e => {
+        if (selectionLocked) return; // disable picking while simulator is running
+        if (!start) {
+          setStart(e.latlng);
+        } else if (!end) {
+          setEnd(e.latlng);
+        } else {
+          setStart(e.latlng); end = null; if (endMarker) { endMarker.remove(); endMarker=null; }
+        }
+        draw();
+      });
+
+      document.getElementById('copy').addEventListener('click', async () => {
+        try { await navigator.clipboard.writeText(document.getElementById('cmd').textContent); alert('Copied'); }
+        catch (e) { alert('Copy failed. Select text and copy.'); }
+      });
+
+      // Bootstrap: ask server for last known lat/lon in existing CNV
+      fetch('/bootstrap').then(r => r.ok ? r.json() : null).then(obj => {
+        if (obj && obj.has_start) {
+          const ll = L.latLng(obj.start_lat, obj.start_lon);
+          setStart(ll);
+          map.panTo(ll);
+        }
+      }).catch(() => {});
+      // Clear button removed; re-routing logic uses ship as START automatically when live
+      document.getElementById('send').addEventListener('click', async () => {
+        if (!(start && end)) { alert('Pick START and END first'); return; }
+        try {
+          const sp = parseFloat(document.getElementById('speed').value || '6');
+          const res = await fetch('/set_route', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ start: { lat: start.lat, lon: start.lng }, end: { lat: end.lat, lon: end.lng }, speed_knots: sp }) });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          // Switch to live mode: initialize ship and track
+          live = true; lastScan = 0; trackCoords = [];
+          if (trackLine) { trackLine.remove(); trackLine=null; }
+          // Solid actual track (green)
+          trackLine = L.polyline([], { color: '#4caf50', weight: 3 }).addTo(map);
+          if (!shipMarker) shipMarker = L.marker([start.lat, start.lng], { zIndexOffset: 1100, icon: L.divIcon({ className: 'ship-pin', html: '<div class="pin ship">⛵</div>', iconSize: [28,28], iconAnchor: [14,14] }) }).addTo(map);
+          // Show a live panel at right
+          document.getElementById('livepanel').style.display = 'block';
+          // Draw planned segments split at ship
+          draw();
+          selectionLocked = true;
+          if (pollTimer) { clearInterval(pollTimer); }
+          poll(); pollTimer = setInterval(poll, 200);
+        } catch (e) { alert('Send failed: ' + e); }
+      });
+
+      // Controls
+      document.getElementById('pause').addEventListener('click', async () => {
+        try { await fetch('/control/pause', { method: 'POST' }); } catch (e) {}
+      });
+      document.getElementById('resume').addEventListener('click', async () => {
+        try { await fetch('/control/resume', { method: 'POST' }); } catch (e) {}
+      });
+      document.getElementById('clearfile').addEventListener('click', async () => {
+        try {
+          const r = await fetch('/control/clear', { method: 'POST' });
+          if (!r.ok) throw new Error('clear failed');
+          // Reset UI and state
+          live = false; selectionLocked = false; lastScan = 0;
+          if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+          trackCoords = [];
+          if (trackLine) trackLine.setLatLngs([]);
+          if (walkedLine) { walkedLine.remove(); walkedLine = null; }
+          if (toWalkLine) { toWalkLine.remove(); toWalkLine = null; }
+          if (startMarker) { startMarker.remove(); startMarker = null; }
+          if (endMarker) { endMarker.remove(); endMarker = null; }
+          if (shipMarker) { shipMarker.remove(); shipMarker = null; }
+          start = null; end = null;
+          document.getElementById('livepanel').style.display = 'none';
+          // Reset Follow toggle
+          followShip = false;
+          document.getElementById('follow').classList.remove('btn-active');
+        } catch (e) { /* ignore */ }
+      });
+      const followBtn = document.getElementById('follow');
+      followBtn.addEventListener('click', () => {
+        followShip = !followShip;
+        followBtn.classList.toggle('btn-active', followShip);
+      });
+
+      // Speed input is sent with Start; live adjust button removed per request
+
+      async function poll(){
+        if (!live) return;
+        try {
+          const res = await fetch(`/live/after?scan=${lastScan}&max=500`);
+          if (!res.ok) return;
+          const arr = await res.json();
+          if (!Array.isArray(arr) || !arr.length) return;
+          for (const r of arr){
+            lastScan = Math.floor(r.scan);
+            const lat = r.latitude, lon = r.longitude;
+            const ll = [lat, lon];
+            trackCoords.push(ll);
+            trackLine.setLatLngs(trackCoords);
+            shipMarker.setLatLng(ll);
+            // Update planned segments and optionally pan
+            if (start && end) {
+              if (walkedLine) walkedLine.setLatLngs([start, ll]);
+              if (toWalkLine) toWalkLine.setLatLngs([ll, end]);
+            }
+            if (followShip) { map.panTo(ll); }
+            // Update live panel
+            updatePanel(r);
+          }
+        } catch (e) {
+          // ignore transient errors
+        }
+      }
+
+      function updatePanel(r){
+        const el = document.getElementById('livekv');
+        if (!el) return;
+        el.innerHTML = `
+          <div class="k">Scan</div><div class="v">${Math.floor(r.scan)}</div>
+          <div class="k">Time (s)</div><div class="v">${(+r.timeS).toFixed(3)}</div>
+          <div class="k">Lat</div><div class="v">${(+r.latitude).toFixed(5)}</div>
+          <div class="k">Lon</div><div class="v">${(+r.longitude).toFixed(5)}</div>
+          <div class="k">Temp t090C</div><div class="v">${(+r.t090C).toFixed(2)} °C</div>
+          <div class="k">Salinity</div><div class="v">${(+r.sal00).toFixed(3)} PSU</div>
+          <div class="k">Pressure</div><div class="v">${(+r.prDM).toFixed(1)} db</div>
+        `;
+      }
+
+      refresh();
+    }
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</head>
+<body>
+  <div id="map"></div>
+  <div class="panel">
+    <div class="row"><strong>Route Picker</strong></div>
+    <div class="row">Click map: first = START, second = END. Drag markers to adjust.</div>
+    <div class="row">
+      <button id="copy">Copy CLI</button>
+      <label style="margin-left:8px;color:#ccc">Speed (kn): <input id="speed" type="number" min="0.1" step="0.1" value="5000" style="width:80px"></label>
+      <button id="send">Start in Simulator</button>
+      <button id="pause" class="secondary">Pause</button>
+      <button id="resume">Resume</button>
+      <button id="clearfile" class="secondary">Clear File</button>
+      <button id="follow">Follow Ship</button>
+    </div>
+    <div class="row code" id="cmd"># Click map: START then END</div>
+  </div>
+  <div class="panel live" id="livepanel" style="display:none">
+    <div class="row"><strong>Live Data</strong></div>
+    <div class="row kv" id="livekv"></div>
+  </div>
+  
+</body>
+</html>
