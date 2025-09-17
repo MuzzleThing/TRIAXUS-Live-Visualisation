@@ -41,9 +41,9 @@ from triaxus.data import create_plot_test_data
 data = create_plot_test_data(hours=2.0)
 
 # Create all plot types
-time_series_html = viz.create_time_series_plot(data, variables=["tv290C", "sal00"])
-contour_html = viz.create_contour_plot(data, variable="tv290C")
-depth_html = viz.create_depth_profile_plot(data, variables=["tv290C", "sal00"])
+time_series_html = viz.create_time_series_plot(data, variables=["tv290c", "sal00"])
+contour_html = viz.create_contour_plot(data, variable="tv290c")
+depth_html = viz.create_depth_profile_plot(data, variables=["tv290c", "sal00"])
 map_html = viz.create_map_plot(data)
 ```
 
@@ -57,14 +57,14 @@ map_html = viz.create_map_plot(data)
 # Basic time series
 html = viz.create_time_series_plot(
     data, 
-    variables=["tv290C"],
+    variables=["tv290c"],
     output_file="time_series.html"
 )
 
 # Multi-variable time series
 html = viz.create_time_series_plot(
     data, 
-    variables=["tv290C", "sal00", "sbeox0Mm_L"],
+    variables=["tv290c", "sal00", "sbeox0mm_l"],
     output_file="multi_time_series.html",
     title="Oceanographic Variables",
     width=1000,
@@ -74,7 +74,7 @@ html = viz.create_time_series_plot(
 # Real-time monitoring
 html = viz.create_time_series_plot(
     data, 
-    variables=["tv290C"],
+    variables=["tv290c"],
     output_file="realtime.html",
     real_time=True,
     status="Running"
@@ -87,14 +87,14 @@ html = viz.create_time_series_plot(
 # Basic contour
 html = viz.create_contour_plot(
     data, 
-    variable="tv290C",
+    variable="tv290c",
     output_file="contour.html"
 )
 
 # Contour with depth filtering
 html = viz.create_contour_plot(
     data, 
-    variable="tv290C",
+    variable="tv290c",
     output_file="filtered_contour.html",
     depth_range=[20, 80],
     title="Temperature Contour (20-80m)"
@@ -103,7 +103,7 @@ html = viz.create_contour_plot(
 # Contour with annotations
 html = viz.create_contour_plot(
     data, 
-    variable="tv290C",
+    variable="tv290c",
     output_file="annotated_contour.html",
     annotations=True
 )
@@ -115,14 +115,14 @@ html = viz.create_contour_plot(
 # Single variable profile
 html = viz.create_depth_profile_plot(
     data, 
-    variables=["tv290C"],
+    variables=["tv290c"],
     output_file="temp_profile.html"
 )
 
 # Multi-variable profile
 html = viz.create_depth_profile_plot(
     data, 
-    variables=["tv290C", "sal00", "sbeox0Mm_L"],
+    variables=["tv290c", "sal00", "sbeox0mm_l"],
     output_file="multi_profile.html",
     title="Multi-Variable Depth Profile"
 )
@@ -138,7 +138,7 @@ html = viz.create_depth_profile_plot(
 # Profile with thermocline detection
 html = viz.create_depth_profile_plot(
     data, 
-    variables=["tv290C"],
+    variables=["tv290c"],
     output_file="thermocline_profile.html",
     thermocline=True
 )
@@ -176,7 +176,7 @@ Get Plotly Figure objects for custom modifications:
 
 ```python
 # Get Plotly Figure
-figure = viz.create_plot_figure("time_series", data, variables=["tv290C"])
+figure = viz.create_plot_figure("time_series", data, variables=["tv290c"])
 
 # Customize layout
 figure.update_layout(
@@ -257,7 +257,7 @@ stats = viz.get_plot_statistics(data, "time_series")
 print(stats)
 # {
 #     'data_points': 120,
-#     'variables': ['tv290C', 'sal00'],
+#     'variables': ['tv290c', 'sal00'],
 #     'time_range': ['2024-01-01 08:00:00', '2024-01-01 10:00:00'],
 #     'depth_range': [0.5, 99.5],
 #     'statistics': {...}
@@ -302,10 +302,10 @@ map_data = create_map_trajectory_data(
 
 The data generator creates the following oceanographic variables:
 
-- `tv290C`: Temperature (°C)
+- `tv290c`: Temperature (°C)
 - `sal00`: Salinity (PSU)
-- `sbeox0Mm_L`: Dissolved Oxygen (μmol/L)
-- `flECO-AFL`: Fluorescence (mg/m³)
+- `sbeox0mm_l`: Dissolved Oxygen (μmol/L)
+- `fleco_afl`: Fluorescence (mg/m³)
 - `ph`: pH
 
 ### Custom Data Integration
@@ -325,7 +325,7 @@ def create_custom_data():
             data.append({
                 'datetime': time,
                 'depth': depth,
-                'tv290C': 20 + depth * 0.1 + np.random.normal(0, 0.5),
+                'tv290c': 20 + depth * 0.1 + np.random.normal(0, 0.5),
                 'sal00': 35 + np.random.normal(0, 0.1)
             })
     
@@ -333,7 +333,7 @@ def create_custom_data():
 
 # Use custom data
 custom_data = create_custom_data()
-plot_html = viz.create_time_series_plot(custom_data, variables=["tv290C"])
+plot_html = viz.create_time_series_plot(custom_data, variables=["tv290c"])
 ```
 
 ## Advanced Usage Examples
@@ -395,7 +395,7 @@ for i, (data, theme) in enumerate(zip(datasets, themes)):
         ),
         "contour": viz.create_contour_plot(
             data, 
-            variable="tv290C",
+            variable="tv290c",
             output_file=f"batch_{i+1}_contour.html",
             title=f"Dataset {i+1} - Contour"
         ),
@@ -417,7 +417,7 @@ def interactive_plot_development():
     data = create_plot_test_data(hours=1.0)
     
     # Start with basic plot
-    figure = viz.create_plot_figure("time_series", data, variables=["tv290C"])
+    figure = viz.create_plot_figure("time_series", data, variables=["tv290c"])
     
     # Iteratively improve
     figure.update_layout(title="Temperature Analysis")
@@ -499,7 +499,7 @@ def safe_plot_creation(viz, plot_type, data, **kwargs):
         return None
 
 # Usage
-result = safe_plot_creation(viz, "time_series", data, variables=["tv290C"])
+result = safe_plot_creation(viz, "time_series", data, variables=["tv290c"])
 if result:
     print("Plot created successfully")
 else:
@@ -554,7 +554,7 @@ for plot_type, params in plots_to_create:
 ```python
 # Clear large datasets when done
 large_data = create_plot_test_data(hours=24.0)
-html = viz.create_time_series_plot(large_data, variables=["tv290C"])
+html = viz.create_time_series_plot(large_data, variables=["tv290c"])
 del large_data  # Free memory
 
 # Use generators for very large datasets
@@ -563,7 +563,7 @@ def data_generator():
         yield create_plot_test_data(hours=1.0, start_hour=hour)
 
 for i, hour_data in enumerate(data_generator()):
-    html = viz.create_time_series_plot(hour_data, variables=["tv290C"])
+    html = viz.create_time_series_plot(hour_data, variables=["tv290c"])
     # Process each hour's data
 ```
 
@@ -589,12 +589,12 @@ class OceanographicAnalyzer:
         
         # Time series analysis
         time_series = self.viz.create_time_series_plot(
-            self.data, variables=["tv290C"]
+            self.data, variables=["tv290c"]
         )
         
         # Contour analysis
         contour = self.viz.create_contour_plot(
-            self.data, variable="tv290C"
+            self.data, variable="tv290c"
         )
         
         return {

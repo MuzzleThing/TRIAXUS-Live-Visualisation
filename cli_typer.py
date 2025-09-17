@@ -86,10 +86,10 @@ def _create_plot_with_progress(
     # Success message
     file_size = os.path.getsize(output)
     console.print(
-        f"✓ {plot_type.replace('_', ' ').title()} plot created successfully: [bold green]{output}[/bold green]"
+        f"[green]{plot_type.replace('_', ' ').title()} plot created successfully: [bold green]{output}[/bold green]"
     )
     if verbose:
-        console.print(f"✓ File size: {file_size:,} bytes")
+        console.print(f"[green]File size: {file_size:,} bytes[/green]")
 
     return output_file
 
@@ -129,7 +129,11 @@ def _generate_sample_data(
             task = progress.add_task(
                 f"Generating {data_points} data points...", total=None
             )
-            data = data_generator.generate_plot_test_data(data_hours, data_points)
+            data = data_generator.generate_plot_test_data(
+                duration_hours=data_hours, 
+                points_per_hour=data_points//data_hours if data_hours > 0 else 60,
+                region="australia"
+            )
 
     return data
 
@@ -249,15 +253,15 @@ def time_series(
         )
 
         if verbose:
-            console.print(f"✓ Data generated: {len(data)} rows")
-            console.print(f"✓ Available columns: {list(data.columns)}")
+            console.print(f"[green]Data generated: {len(data)} rows[/green]")
+            console.print(f"[green]Available columns: {list(data.columns)}[/green]")
             console.print(
-                f"✓ Variables: {parsed_variables or 'All standard variables'}"
+                f"[green]Variables: {parsed_variables or 'All standard variables'}[/green]"
             )
-            console.print(f"✓ Time range: {parsed_time_range or 'All data'}")
-            console.print(f"✓ Depth range: {parsed_depth_range or 'All depths'}")
-            console.print(f"✓ Real-time: {real_time}")
-            console.print(f"✓ Status: {status if real_time else 'N/A'}")
+            console.print(f"[green]Time range: {parsed_time_range or 'All data'}[/green]")
+            console.print(f"[green]Depth range: {parsed_depth_range or 'All depths'}[/green]")
+            console.print(f"[green]Real-time: {real_time}[/green]")
+            console.print(f"[green]Status: {status if real_time else 'N/A'}[/green]")
 
         # Prepare plot parameters
         plot_kwargs = {
@@ -383,13 +387,17 @@ def contour(
                 task = progress.add_task(
                     f"Generating {data_points} data points...", total=None
                 )
-                data = data_generator.generate_plot_test_data(data_hours, data_points)
+                data = data_generator.generate_plot_test_data(
+                duration_hours=data_hours, 
+                points_per_hour=data_points//data_hours if data_hours > 0 else 60,
+                region="australia"
+            )
 
         if verbose:
-            console.print(f"✓ Data generated: {len(data)} rows")
-            console.print(f"✓ Contour variable: {variable}")
-            console.print(f"✓ Time range: {parsed_time_range or 'All data'}")
-            console.print(f"✓ Depth range: {parsed_depth_range or 'All depths'}")
+            console.print(f"[green]Data generated: {len(data)} rows[/green]")
+            console.print(f"[green]Contour variable: {variable}[/green]")
+            console.print(f"[green]Time range: {parsed_time_range or 'All data'}[/green]")
+            console.print(f"[green]Depth range: {parsed_depth_range or 'All depths'}[/green]")
 
         # Initialize visualizer
         with Progress(
@@ -437,10 +445,10 @@ def contour(
         # Success message
         file_size = os.path.getsize(output)
         console.print(
-            f"✓ Contour plot created successfully: [bold green]{output}[/bold green]"
+            f"[green]Contour plot created successfully: [bold green]{output}[/bold green]"
         )
         if verbose:
-            console.print(f"✓ File size: {file_size:,} bytes")
+            console.print(f"[green]File size: {file_size:,} bytes[/green]")
 
     except Exception as e:
         console.print(f"Error: [bold red]{e}[/bold red]")
@@ -543,8 +551,8 @@ def map(
                 )
 
         if verbose:
-            console.print(f"✓ Data generated: {len(data)} rows")
-            console.print(f"✓ Time range: {parsed_time_range or 'All data'}")
+            console.print(f"[green]Data generated: {len(data)} rows[/green]")
+            console.print(f"[green]Time range: {parsed_time_range or 'All data'}[/green]")
 
         # Initialize visualizer
         with Progress(
@@ -590,10 +598,10 @@ def map(
         # Success message
         file_size = os.path.getsize(output)
         console.print(
-            f"✓ Map plot created successfully: [bold green]{output}[/bold green]"
+            f"[green]Map plot created successfully: [bold green]{output}[/bold green]"
         )
         if verbose:
-            console.print(f"✓ File size: {file_size:,} bytes")
+            console.print(f"[green]File size: {file_size:,} bytes[/green]")
 
     except Exception as e:
         console.print(f"Error: [bold red]{e}[/bold red]")
@@ -607,10 +615,10 @@ def map(
 @app.command()
 def depth_profile(
     output: str = typer.Option(
-        "examples/depth_profile.html", "--output", "-o", help="Output HTML file path"
+        "depth_profile.html", "--output", "-o", help="Output HTML file path"
     ),
     variables: str = typer.Option(
-        "tv290C", "--variables", help="Variables to plot (comma-separated)"
+        "tv290c", "--variables", help="Variables to plot (comma-separated)"
     ),
     depth_range: str = typer.Option(
         None, "--depth-range", help="Depth range filter (format: 'min,max')"
@@ -640,10 +648,6 @@ def depth_profile(
 
         # Generate sample data
         data = data_generator.generate_plot_test_data()
-
-        # Apply depth range filter if specified
-        if depth_range:
-            data = apply_depth_range_filter(data, depth_range)
 
         # Create visualizer
         visualizer = TriaxusVisualizer(theme=theme)
@@ -733,7 +737,7 @@ def data_info():
         ("Variables", "temperature, salinity, oxygen, fluorescence, ph"),
         ("Time Options", "Custom hours, full day (24h), quick test"),
         ("Realistic Data", "Oceanographic patterns with natural variation"),
-        ("GPS Coordinates", "Simulated cruise tracks (Australia region)"),
+        ("GPS Coordinates", "Simulated cruise tracks (regional oceanographic data)"),
         ("Reproducible", "Fixed random seed for consistent results"),
         ("Plot Focused", "Designed specifically for testing plot functionality"),
         (
@@ -770,10 +774,10 @@ def data_info():
         ("depth", "Depth in meters"),
         ("latitude", "GPS latitude"),
         ("longitude", "GPS longitude"),
-        ("tv290C", "Temperature (°C)"),
+        ("tv290c", "Temperature (°C)"),
         ("sal00", "Salinity (PSU)"),
-        ("sbeox0Mm_L", "Oxygen (mg/L)"),
-        ("flECO-AFL", "Fluorescence (RFU)"),
+        ("sbeox0mm_l", "Oxygen (mg/L)"),
+        ("fleco_afl", "Fluorescence (RFU)"),
         ("ph", "pH value"),
     ]
     for var, desc in variables:

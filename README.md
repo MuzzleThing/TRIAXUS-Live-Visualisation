@@ -8,15 +8,18 @@ A modern, configuration-driven visualization toolkit for oceanographic research.
 
 ## Key Features
 
-- Four plot types: time series, contour, depth profile, map trajectory
-- Map integration: Mapbox styles with automatic offline fallbacks
-- Professional themes: oceanographic (default), dark, default, high_contrast
-- Real-time visualization mode and status indicator (time series)
-- Configuration-driven architecture (Dynaconf), no hard-coded values
-- High-quality HTML outputs with bundled Plotly.js
-- Modern CLI with rich progress messages and examples
-- Clean, modular architecture; reduced duplication; maintainable codebase
-- Built-in synthetic data generator (including Australia region trajectories)
+- **Four Plot Types**: time series, contour, depth profile, map trajectory
+- **Database Integration**: PostgreSQL support for data storage and retrieval
+- **Oceanographic Data**: Realistic oceanographic data with proper geographic coordinates
+- **Map Integration**: Mapbox styles with automatic offline fallbacks
+- **Professional Themes**: oceanographic (default), dark, default, high_contrast
+- **Real-time Visualization**: Time series with status indicators
+- **Configuration-driven**: Dynaconf-based, no hard-coded values
+- **High-quality Outputs**: HTML with bundled Plotly.js
+- **Modern CLI**: Rich progress messages and comprehensive options
+- **Clean Architecture**: Modular, maintainable codebase
+- **Built-in Data Generator**: Synthetic oceanographic data including regional trajectories
+- **Comprehensive Testing**: Full test suite with organized output structure
 
 ## Quick Start
 
@@ -26,18 +29,66 @@ A modern, configuration-driven visualization toolkit for oceanographic research.
 pip install -r requirements.txt
 ```
 
+### Database Setup (Optional)
+
+The system supports PostgreSQL database integration:
+
+1. **Set up PostgreSQL database**:
+   ```bash
+   createdb triaxus_db
+   export DATABASE_URL="postgresql://username:password@localhost:5432/triaxus_db"
+   ```
+
+2. **Use database in Python**:
+   ```python
+   from triaxus.data.database_source import DatabaseDataSource
+   
+   db = DatabaseDataSource()
+   if db.is_available():
+       # Load oceanographic data
+       data = db.load_data(limit=100)
+       print(f"Loaded {len(data)} oceanographic records")
+       
+       # Store new data
+       db.store_data(data, "my_survey.csv")
+   ```
+
+3. **Database Integration with Visualization**:
+   ```python
+   from triaxus import TriaxusVisualizer
+   from triaxus.data.database_source import DatabaseDataSource
+   
+   # Load data from database
+   db = DatabaseDataSource()
+   viz = TriaxusVisualizer()
+   
+   if db.is_available():
+       data = db.load_data(limit=20)  # Oceanographic data
+       
+       # Create visualizations
+       viz.create_plot('map', data, output_file='survey_map.html')
+       viz.create_plot('time_series', data, output_file='timeseries.html')
+   ```
+
 ### CLI Usage
 
 ```bash
 # Basic plot generation
 python triaxus-plot time-series --output time_series.html
-python triaxus-plot contour --variable tv290C --output contour.html
-python triaxus-plot depth-profile --variables tv290C,sal00 --output depth_profile.html
+python triaxus-plot contour --variable tv290c --output contour.html
+python triaxus-plot depth-profile --variables tv290c,sal00 --output depth_profile.html
 python triaxus-plot map --output map.html
+
+# Regional survey examples
+python triaxus-plot map --title "Oceanographic Survey" --output survey_map.html
+python triaxus-plot time-series --variables tv290c,sal00 --title "Oceanographic Data" --output timeseries.html
 
 # Get help
 python triaxus-plot --help
 python triaxus-plot time-series --help
+python triaxus-plot list-variables  # List available variables
+python triaxus-plot themes          # List available themes
+python triaxus-plot examples        # Show usage examples
 ```
 
 For detailed CLI examples and advanced usage, see [CLI_USAGE.md](docs/CLI_USAGE.md).
@@ -46,23 +97,30 @@ For detailed CLI examples and advanced usage, see [CLI_USAGE.md](docs/CLI_USAGE.
 
 ```python
 from triaxus import TriaxusVisualizer
+from triaxus.data.database_source import DatabaseDataSource
 from triaxus.data import create_plot_test_data
 
 # Initialize visualizer
 viz = TriaxusVisualizer(theme="oceanographic")
 
-# Generate sample data
-data = create_plot_test_data(hours=2.0)
+# Option 1: Use database data
+db = DatabaseDataSource()
+if db.is_available():
+    data = db.load_data(limit=20)  # Oceanographic data
+    print(f"Loaded {len(data)} oceanographic records")
+else:
+    # Option 2: Generate sample data
+    data = create_plot_test_data(hours=2.0)
 
 # Create plots programmatically
-time_series_html = viz.create_time_series_plot(data, variables=["tv290C", "sal00"])
-contour_html = viz.create_contour_plot(data, variable="tv290C")
-depth_html = viz.create_depth_profile_plot(data, variables=["tv290C", "sal00"])
-map_html = viz.create_map_plot(data)
+time_series_html = viz.create_plot("time_series", data, variables=["tv290c", "sal00"])
+contour_html = viz.create_plot("contour", data, variable="tv290c")
+depth_html = viz.create_plot("depth_profile", data, variables=["tv290c", "sal00"])
+map_html = viz.create_plot("map", data, title="Oceanographic Survey")
 
 # Get Plotly Figure for custom modifications
-figure = viz.create_plot_figure("time_series", data, variables=["tv290C"])
-figure.update_layout(title="Custom Title")
+figure = viz.create_plot_figure("time_series", data, variables=["tv290c"])
+figure.update_layout(title="Custom Oceanographic Analysis")
 figure.show()
 ```
 
@@ -121,85 +179,102 @@ map_plot:
 
 - Contour interpolation failed: This is expected sometimes; the plot will fall back to a scatter representation and still be generated.
 - Mapbox token not provided: The CLI will warn and use offline/scattergeo fallback.
-- Variable names: Use existing columns from the generator, e.g., `tv290C`, `sal00`, `sbeox0Mm_L`, `flECO-AFL`, `ph`.
+- Variable names: Use existing columns from the generator, e.g., `tv290c`, `sal00`, `sbeox0mm_l`, `fleco_afl`, `ph`.
 - Custom size not applying (maps): Passing `--width`/`--height` works; the logic prioritizes CLI dimensions over defaults.
 
 ## Project Structure
 
 ```
 triaxus-plotter/
-├── triaxus-plot                 # CLI entry (executable)
-├── cli_typer.py                 # CLI implementation
-├── settings.py                  # Global settings
-├── requirements.txt              # Python dependencies
-├── pyproject.toml               # Project configuration
-├── LICENSE                      # MIT License
-├── README.md                    # This file
-├── triaxus/                     # Main package
-│   ├── __init__.py
-│   ├── visualizer.py            # Unified plotting API
-│   ├── core/                    # Core functionality
-│   │   ├── __init__.py
-│   │   ├── base_plotter.py      # Base plotter class
-│   │   ├── data_validator.py    # Data validation
-│   │   ├── error_handler.py    # Error handling
-│   │   └── config/             # Configuration management
-│   │       ├── __init__.py
-│   │       ├── manager.py       # Main config manager
-│   │       ├── theme_manager.py # Theme management
-│   │       ├── plot_config_manager.py
-│   │       ├── data_config_manager.py
-│   │       └── ui_config_manager.py
-│   ├── plotters/                # Plot implementations
-│   │   ├── __init__.py
-│   │   ├── plotter_factory.py   # Plotter factory
-│   │   ├── time_series.py       # Time series plots
-│   │   ├── time_series_helpers.py
-│   │   ├── depth_profile.py     # Depth profile plots
-│   │   ├── depth_helpers.py
-│   │   ├── contour.py           # Contour plots
-│   │   ├── contour_helpers.py
-│   │   ├── map_plot.py          # Map trajectory plots
-│   │   └── map_helpers.py
-│   ├── data/                    # Data processing
-│   │   ├── __init__.py
-│   │   ├── simple_data_generator.py # Test data generation
-│   │   ├── processor.py         # Data processing
-│   │   └── sampler.py           # Data sampling
-│   └── utils/                   # Utilities
-│       ├── __init__.py
-│       └── html_generator.py     # HTML generation
-├── configs/                     # Configuration files
-│   ├── default.yaml             # Default configuration
-│   ├── custom.yaml              # Custom overrides (optional)
-│   ├── examples/
-│   │   └── custom.yaml          # Example custom config
-│   └── themes/                  # Theme definitions
-│       ├── oceanographic.yaml
-│       ├── dark.yaml
-│       └── high_contrast.yaml
-├── tests/                       # Test suite
-│   ├── __init__.py
-│   ├── run_tests.py             # Main test runner
-│   ├── run_split_tests.py       # Alternative test runner
-│   ├── test_data_quality.py     # Data quality tests
-│   ├── plots/                   # Plot-specific tests
-│   │   ├── __init__.py
-│   │   ├── test_time_series_plots.py
-│   │   ├── test_depth_profile_plots.py
-│   │   └── test_contour_plots.py
-│   ├── maps/                    # Map-specific tests
-│   │   ├── __init__.py
-│   │   ├── test_map_trajectory.py
-│   │   └── test_map_view.py
-│   ├── themes/                  # Theme-specific tests
-│   │   ├── __init__.py
-│   │   └── test_theme_functionality.py
-│   └── output/                  # Generated test outputs
-│       └── *.html               # Test plot files
-└── docs/                        # Documentation
-    ├── API_USAGE.md             # Detailed Python API reference
-    └── CLI_USAGE.md             # Detailed CLI usage guide
+├── triaxus-plot                           # CLI entry point (executable)
+├── cli_typer.py                           # CLI implementation
+├── settings.py                            # Global settings
+├── requirements.txt                       # Python dependencies
+├── pyproject.toml                         # Project configuration
+├── LICENSE                                # MIT License
+├── README.md                              # Project documentation
+├── configs/                               # Configuration files
+│   ├── default.yaml                       # Default configuration (do not edit)
+│   ├── custom.yaml                        # Custom overrides (optional)
+│   ├── examples/                          # Configuration examples
+│   │   ├── custom.example.yaml            # Example for user overrides
+│   │   └── database.example.yaml          # Example for database settings
+│   └── themes/                            # Theme definitions
+│       ├── oceanographic.yaml             # Oceanographic theme
+│       ├── dark.yaml                      # Dark theme
+│       └── high_contrast.yaml             # High contrast theme
+├── docs/                                  # Documentation
+│   ├── API_USAGE.md                       # Detailed Python API reference
+│   ├── CLI_USAGE.md                       # Detailed CLI usage guide
+│   └── DATABASE_USAGE.md                  # Database integration guide
+├── env.example                            # Environment variable template
+├── tests/                                 # Test suite
+│   ├── __init__.py                        # Test package init
+│   ├── test_runner.py                     # Main test runner
+│   ├── test_runner_quick.py               # Quick test runner
+│   ├── test_comprehensive.py              # Comprehensive E2E tests
+│   ├── test_database.py                   # Database test runner
+│   ├── unit/                              # Unit tests
+│   │   ├── test_models_and_mappers.py    # Models/mappers tests
+│   │   ├── test_data_quality.py           # Data quality tests
+│   │   ├── database/                      # Database-specific tests
+│   │   │   ├── test_connectivity.py       # DB connectivity tests
+│   │   │   ├── test_schema.py             # DB schema tests
+│   │   │   ├── test_mapping.py            # Data mapping tests
+│   │   │   └── test_operations.py         # DB operations tests
+│   │   ├── plots/                         # Plot component tests
+│   │   └── themes/                        # Theme tests
+│   ├── integration/                       # Integration tests
+│   │   ├── test_integration.py            # DB integration tests
+│   │   └── maps/                          # Map visualization tests
+│   │       └── test_map_trajectory.py     # Map trajectory tests
+│   └── output/                            # Generated test outputs (HTML)
+├── triaxus/                               # Main package
+│   ├── __init__.py                        # Package init
+│   ├── visualizer.py                      # Unified plotting API
+│   ├── core/                              # Core functionality
+│   │   ├── __init__.py                    # Subpackage init
+│   │   ├── base_plotter.py                # Abstract plotter base class
+│   │   ├── data_validator.py              # Input data validation
+│   │   ├── error_handler.py               # Plotting error handling
+│   │   └── config/                        # Configuration managers
+│   │       ├── __init__.py                # Subpackage init
+│   │       ├── manager.py                 # Main config manager (Dynaconf)
+│   │       ├── theme_manager.py           # Theme config manager
+│   │       ├── plot_config_manager.py     # Plot config manager
+│   │       ├── data_config_manager.py     # Data config manager
+│   │       └── ui_config_manager.py       # UI config manager
+│   ├── data/                              # Data processing
+│   │   ├── __init__.py                    # Subpackage init
+│   │   ├── simple_data_generator.py       # Synthetic data generator
+│   │   ├── processor.py                   # Data processing utilities
+│   │   ├── sampler.py                     # Sampling utilities
+│   │   └── database_source.py             # Database data source
+│   ├── database/                          # Database integration
+│   │   ├── __init__.py                    # Subpackage init
+│   │   ├── config_manager.py              # DB configuration manager
+│   │   ├── connection_manager.py          # DB engine/session management
+│   │   ├── initializer.py                 # Schema initialization
+│   │   ├── mappers.py                     # DataFrame↔ORM mappers
+│   │   ├── models.py                      # SQLAlchemy ORM models
+│   │   ├── repositories.py                # Repository access layer
+│   │   └── sql/                           # SQL assets
+│   │       └── init_database.sql          # SQL initialization script
+│   ├── plotters/                          # Plot implementations
+│   │   ├── __init__.py                    # Subpackage init
+│   │   ├── plotter_factory.py             # Plotter factory
+│   │   ├── time_series.py                 # Time series plotter
+│   │   ├── time_series_helpers.py         # Time series helpers
+│   │   ├── depth_profile.py               # Depth profile plotter
+│   │   ├── depth_helpers.py               # Depth helpers
+│   │   ├── contour.py                     # Contour plotter
+│   │   ├── contour_helpers.py             # Contour helpers
+│   │   ├── map_plot.py                    # Map trajectory plotter
+│   │   └── map_helpers.py                 # Map helpers
+│   └── utils/                             # Utilities
+│       ├── __init__.py                    # Subpackage init
+│       └── html_generator.py              # HTML writer for plots
+└── triaxus-plot                           # CLI entry point (executable)
 ```
 
 ## Quick Verification
@@ -207,24 +282,50 @@ triaxus-plotter/
 ```bash
 # Minimal end-to-end checks
 python triaxus-plot time-series --output demo_time_series.html
-python triaxus-plot contour --variable tv290C --output demo_contour.html
+python triaxus-plot contour --variable tv290c --output demo_contour.html
 python triaxus-plot map --output demo_map.html
-python triaxus-plot depth-profile --variables tv290C,sal00 --output demo_depth.html
+python triaxus-plot depth-profile --variables tv290c,sal00 --output demo_depth.html
 ```
 
 ## Tests
 
 ```bash
 # Run the full test suite (generates HTML into tests/output/)
-python tests/run_tests.py
+python tests/test_runner.py
 
-# Run split tests (same coverage, separate imports)
-python tests/run_split_tests.py
+# Run quick tests (database connectivity and basic operations)
+python tests/test_runner_quick.py
+
+# Run comprehensive E2E tests
+python tests/test_comprehensive.py
+
+# Run database-specific tests
+python tests/test_database.py
+
+# Run specific test modules
+python tests/integration/maps/test_map_trajectory.py  # Map trajectory tests
+python tests/integration/test_integration.py          # Database integration tests
+python tests/unit/test_models_and_mappers.py          # Models/mappers tests
 ```
 
-Notes:
-- Tests are organized under `tests/plots/`, `tests/maps/`, and `tests/themes/`.
-- Outputs are written to `tests/output/` and can be opened directly in a browser.
+### Test Organization
+
+- **`tests/unit/`**: Unit tests for individual components
+- **`tests/integration/`**: Integration tests for system components
+- **`tests/output/`**: All generated HTML test files
+- **`tests/test_runner.py`**: Main test runner with comprehensive coverage
+- **`tests/test_runner_quick.py`**: Quick test runner for development
+- **`tests/test_comprehensive.py`**: End-to-end comprehensive tests
+- **`tests/test_database.py`**: Dedicated database testing
+
+### Test Features
+
+- **Oceanographic Data**: Map tests use realistic oceanographic data
+- **Database Integration**: Full database functionality testing
+- **All Plot Types**: Complete coverage of time series, contour, depth profile, and map plots
+- **Theme Testing**: All themes (oceanographic, dark, default, high_contrast)
+- **Data Quality**: Various data scenarios and edge cases
+- **Output Validation**: All HTML files generated in organized structure
 
 ## License
 

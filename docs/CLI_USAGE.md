@@ -61,10 +61,10 @@ Display ocean variables over time. Supports multiple variables and real-time upd
 python triaxus-plot time-series --output basic.html
 
 # Multiple variables
-python triaxus-plot time-series --variables tv290C,sal00,sbeox0Mm_L --output multi.html
+python triaxus-plot time-series --variables tv290c,sal00,sbeox0mm_l --output multi.html
 
 # With custom styling
-python triaxus-plot time-series --variables tv290C --theme dark --width 1000 --height 600 --output styled.html
+python triaxus-plot time-series --variables tv290c --theme dark --width 1000 --height 600 --output styled.html
 ```
 
 #### Advanced Options
@@ -89,10 +89,10 @@ python triaxus-plot time-series --daily-data --day "2024-01-15" --output daily.h
 #### Available Variables
 
 Supported variables from the built-in generator:
-- `tv290C`: Temperature (°C)
+- `tv290c`: Temperature (°C)
 - `sal00`: Salinity (PSU)
-- `sbeox0Mm_L`: Dissolved Oxygen (μmol/L)
-- `flECO-AFL`: Fluorescence (mg/m³)
+- `sbeox0mm_l`: Dissolved Oxygen (μmol/L)
+- `fleco_afl`: Fluorescence (mg/m³)
 - `ph`: pH
 
 ### 2) Contour
@@ -103,29 +103,29 @@ Supported variables from the built-in generator:
 
 ```bash
 # Temperature contour
-python triaxus-plot contour --variable tv290C --output temp_contour.html
+python triaxus-plot contour --variable tv290c --output temp_contour.html
 
 # Salinity contour
 python triaxus-plot contour --variable sal00 --output salinity_contour.html
 
 # Oxygen contour
-python triaxus-plot contour --variable sbeox0Mm_L --output oxygen_contour.html
+python triaxus-plot contour --variable sbeox0mm_l --output oxygen_contour.html
 ```
 
 #### Advanced Options
 
 ```bash
 # With depth filtering
-python triaxus-plot contour --variable tv290C --depth-range "20,80" --output filtered_contour.html
+python triaxus-plot contour --variable tv290c --depth-range "20,80" --output filtered_contour.html
 
 # With annotations
-python triaxus-plot contour --variable tv290C --annotations --output annotated_contour.html
+python triaxus-plot contour --variable tv290c --annotations --output annotated_contour.html
 
 # Custom styling
-python triaxus-plot contour --variable tv290C --theme high_contrast --width 1200 --height 800 --output styled_contour.html
+python triaxus-plot contour --variable tv290c --theme high_contrast --width 1200 --height 800 --output styled_contour.html
 
 # Time range filtering
-python triaxus-plot contour --variable tv290C --time-range "2024-01-01 10:00:00,2024-01-01 14:00:00" --output time_filtered.html
+python triaxus-plot contour --variable tv290c --time-range "2024-01-01 10:00:00,2024-01-01 14:00:00" --output time_filtered.html
 ```
 
 #### Notes
@@ -141,32 +141,32 @@ Oceanographic convention (depth axis inverted). Supports multiple variables, dep
 
 ```bash
 # Single variable profile
-python triaxus-plot depth-profile --variables tv290C --output temp_profile.html
+python triaxus-plot depth-profile --variables tv290c --output temp_profile.html
 
 # Multi-variable profile
-python triaxus-plot depth-profile --variables tv290C,sal00,sbeox0Mm_L --output multi_profile.html
+python triaxus-plot depth-profile --variables tv290c,sal00,sbeox0mm_l --output multi_profile.html
 
 # Temperature and salinity
-python triaxus-plot depth-profile --variables tv290C,sal00 --output temp_sal_profile.html
+python triaxus-plot depth-profile --variables tv290c,sal00 --output temp_sal_profile.html
 ```
 
 #### Advanced Options
 
 ```bash
 # With depth zones
-python triaxus-plot depth-profile --variables tv290C,sal00 --depth-zones --output zones_profile.html
+python triaxus-plot depth-profile --variables tv290c,sal00 --depth-zones --output zones_profile.html
 
 # With thermocline detection
-python triaxus-plot depth-profile --variables tv290C --thermocline --output thermocline_profile.html
+python triaxus-plot depth-profile --variables tv290c --thermocline --output thermocline_profile.html
 
 # Combined features
-python triaxus-plot depth-profile --variables tv290C,sal00 --depth-zones --thermocline --output advanced_profile.html
+python triaxus-plot depth-profile --variables tv290c,sal00 --depth-zones --thermocline --output advanced_profile.html
 
 # Depth range filtering
-python triaxus-plot depth-profile --variables tv290C --depth-range "10,50" --output shallow_profile.html
+python triaxus-plot depth-profile --variables tv290c --depth-range "10,50" --output shallow_profile.html
 
 # Custom styling
-python triaxus-plot depth-profile --variables tv290C,sal00 --theme dark --width 800 --height 1000 --output styled_profile.html
+python triaxus-plot depth-profile --variables tv290c,sal00 --theme dark --width 800 --height 1000 --output styled_profile.html
 ```
 
 ### 4) Map Trajectory
@@ -281,9 +281,9 @@ python triaxus-plot map --theme high_contrast --output contrast_map.html
 
 ```bash
 # Generate multiple plot types
-python triaxus-plot time-series --variables tv290C --output batch_time_series.html
-python triaxus-plot contour --variable tv290C --output batch_contour.html
-python triaxus-plot depth-profile --variables tv290C,sal00 --output batch_profile.html
+python triaxus-plot time-series --variables tv290c --output batch_time_series.html
+python triaxus-plot contour --variable tv290c --output batch_contour.html
+python triaxus-plot depth-profile --variables tv290c,sal00 --output batch_profile.html
 python triaxus-plot map --output batch_map.html
 ```
 
@@ -321,12 +321,12 @@ python triaxus-plot map --width 1500 --height 1000 --theme dark --output large_d
 
 ```bash
 # Temperature and salinity analysis
-python triaxus-plot time-series --variables tv290C,sal00 --output temp_sal_ts.html
-python triaxus-plot depth-profile --variables tv290C,sal00 --depth-zones --output temp_sal_profile.html
+python triaxus-plot time-series --variables tv290c,sal00 --output temp_sal_ts.html
+python triaxus-plot depth-profile --variables tv290c,sal00 --depth-zones --output temp_sal_profile.html
 
 # Oxygen and fluorescence analysis
-python triaxus-plot time-series --variables sbeox0Mm_L,flECO-AFL --output oxygen_fluorescence.html
-python triaxus-plot contour --variable sbeox0Mm_L --output oxygen_contour.html
+python triaxus-plot time-series --variables sbeox0mm_l,fleco_afl --output oxygen_fluorescence.html
+python triaxus-plot contour --variable sbeox0mm_l --output oxygen_contour.html
 ```
 
 ## Configuration
@@ -401,7 +401,7 @@ Warning: Mapbox token not found, using offline fallback
 Error: Variable 'nonexistent_var' not found in data
 ```
 
-**Solution**: Use available variables: `tv290C`, `sal00`, `sbeox0Mm_L`, `flECO-AFL`, `ph`
+**Solution**: Use available variables: `tv290c`, `sal00`, `sbeox0mm_l`, `fleco_afl`, `ph`
 
 #### 4. File Permission Errors
 

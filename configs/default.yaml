@@ -4,7 +4,7 @@
 #  IMPORTANT: DO NOT MODIFY THIS FILE DIRECTLY, OTHERWISE YOUR CUSTOMIZATIONS MIGHT MESS UP THE SYSTEM.
 # 
 # To customize settings:
-# 1. Copy configs/examples/custom.yaml to configs/custom.yaml
+# 1. Copy configs/examples/custom.example.yaml to configs/custom.yaml
 # 2. Modify only the settings you want to change in custom.yaml
 # 3. The system will automatically merge custom.yaml with this default file
 # 
@@ -417,6 +417,30 @@ data_generation:
   # Amplitude factors
   amplitude_factors:
     temperature: 4.0
+
+# =============================================================================
+# DATABASE CONFIGURATION
+# =============================================================================
+database:
+  # Enable/disable database functionality
+  enabled: false
+  
+  # PostgreSQL connection settings
+  url: "postgresql://user:password@localhost:5432/triaxus_db"
+  
+  # SQLAlchemy settings
+  echo: false  # Enable SQL query logging
+  
+  # Connection pool settings
+  pool_size: 5          # Number of connections to maintain in pool
+  max_overflow: 10      # Additional connections beyond pool_size
+  pool_timeout: 30      # Seconds to wait for connection from pool
+  pool_recycle: 3600    # Seconds before connection is recycled
+  
+  # Table configuration
+  table:
+    name: "oceanographic_data"
+    indexes: ["datetime", "depth", "latitude", "longitude"]
     salinity: 1.5
     oxygen: 2.0
     fluorescence: 0.3

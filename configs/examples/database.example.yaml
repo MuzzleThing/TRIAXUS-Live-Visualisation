@@ -1,0 +1,109 @@
+# Database Configuration for TRIAXUS
+# 
+# This configuration leverages Dynaconf's built-in security features
+# for simple yet secure database configuration management.
+
+# =============================================================================
+# METHOD 1: ENVIRONMENT VARIABLES (RECOMMENDED)
+# =============================================================================
+# Dynaconf automatically loads .env files and environment variables
+# Create a .env file in your project root:
+#
+# DATABASE_URL=postgresql://username:password@host:port/database
+# DB_ENABLED=true
+#
+# Or set environment variables:
+# export DATABASE_URL="postgresql://username:password@host:port/database"
+# export DB_ENABLED=true
+
+# =============================================================================
+# METHOD 2: CONFIG FILE (FOR DEVELOPMENT)
+# =============================================================================
+# Use this for development/testing only:
+database:
+  enabled: true
+  url: "postgresql://dev_user:dev_pass@localhost:5432/triaxus_dev"
+  pool_size: 5
+  max_overflow: 10
+  echo: true  # Enable SQL logging for debugging
+
+# =============================================================================
+# METHOD 3: PRODUCTION CONFIGURATION
+# =============================================================================
+# For production, use environment variables with minimal config:
+database:
+  enabled: true
+  # URL loaded from DATABASE_URL environment variable
+  pool_size: 20
+  max_overflow: 30
+  pool_timeout: 30
+  pool_recycle: 3600
+  echo: false  # Disable SQL logging in production
+  
+  table:
+    name: "oceanographic_data"
+    indexes: ["datetime", "depth", "latitude", "longitude"]
+
+# =============================================================================
+# DYNACONF SECURITY FEATURES USED
+# =============================================================================
+# 
+# 1. Environment Variable Override
+#    - DATABASE_URL automatically overrides config file values
+#    - DB_ENABLED controls database enablement
+#
+# 2. .env File Support
+#    - Create .env file for local development
+#    - Automatically loaded by Dynaconf
+#    - Add .env to .gitignore for security
+#
+# 3. Configuration Validation
+#    - Built-in validation for required fields
+#    - Security warnings for default credentials
+#
+# =============================================================================
+# SECURITY CHECKLIST
+# =============================================================================
+# 
+# - Use environment variables for production credentials
+# - Create .env file for local development
+# - Add .env to .gitignore
+# - Use strong, unique passwords
+# - Disable SQL logging in production
+# - Use appropriate connection pool settings
+# - Regularly rotate database passwords
+# - Monitor database access logs
+#
+# =============================================================================
+# EXAMPLE .env FILE
+# =============================================================================
+# Create this file as .env in your project root:
+#
+# # Database Configuration
+# DATABASE_URL=postgresql://triaxus_user:secure_password@localhost:5432/triaxus_db
+# DB_ENABLED=true
+#
+# # Optional: Override pool settings
+# DB_POOL_SIZE=10
+# DB_MAX_OVERFLOW=20
+#
+# =============================================================================
+# USAGE EXAMPLES
+# =============================================================================
+#
+# Development:
+# 1. Create .env file with your database credentials
+# 2. Use config file for non-sensitive settings
+# 3. Enable SQL logging for debugging
+#
+# Production:
+# 1. Set DATABASE_URL environment variable
+# 2. Set DB_ENABLED=true
+# 3. Use appropriate pool settings
+# 4. Disable SQL logging
+#
+# Testing:
+# 1. Use separate test database
+# 2. Set DATABASE_URL to test database
+# 3. Use smaller pool sizes
+# 4. Enable SQL logging if needed
