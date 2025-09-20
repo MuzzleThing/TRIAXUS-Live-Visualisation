@@ -156,3 +156,103 @@ html, body {
     background: rgba(255, 255, 255, 0.8);
     color: #1565C0;
 }
+
+.custom-control-container {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.control-button {
+    background: rgba(15, 25, 40, 0.95);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(100, 181, 246, 0.4);
+    border-radius: 8px;
+    color: white;
+    padding: 10px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    min-width: 120px;
+    text-align: center;
+}
+
+.control-button:hover {
+    background: rgba(25, 35, 50, 0.98);
+    border-color: rgba(100, 181, 246, 0.6);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.control-button:active {
+    transform: translateY(0);
+}
+
+.points-panel {
+    position: absolute;
+    top: 10px;
+    right: 150px;
+    z-index: 1000;
+    background: rgba(15, 25, 40, 0.95);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(100, 181, 246, 0.4);
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    width: 250px;
+    max-height: 400px;
+    overflow-y: auto;
+    display: none;
+}
+
+.points-panel.show {
+    display: block;
+}
+
+.panel-title {
+    color: #64b5f6;
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    text-align: center;
+    border-bottom: 1px solid rgba(100, 181, 246, 0.3);
+    padding-bottom: 8px;
+}
+
+.point-item {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(100, 181, 246, 0.2);
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.point-item:hover {
+    background: rgba(100, 181, 246, 0.2);
+    border-color: rgba(100, 181, 246, 0.4);
+    transform: translateX(5px);
+}
+
+.point-number {
+    color: #64b5f6;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.point-info {
+    color: #b3b3b3;
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+.point-temp {
+    color: #ff5722;
+}
