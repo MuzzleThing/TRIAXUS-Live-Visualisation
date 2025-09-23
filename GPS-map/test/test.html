@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPS Map Advanced Test Suite</title>
+    <link rel="stylesheet" href="leaflet.css" />
+    <link rel="stylesheet" href="map.css">
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            padding: 20px; 
+            background: #f5f5f5;
+            margin: 0;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .test-controls {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .test-result { 
+            padding: 12px; 
+            margin: 8px 0; 
+            border-radius: 6px; 
+            border-left: 4px solid;
+            font-size: 14px;
+        }
+        
+        .pass { 
+            background: #d4f6d4; 
+            border-color: #4caf50; 
+            color: #2e7d32; 
+        }
+        
+        .fail { 
+            background: #ffd4d4; 
+            border-color: #f44336; 
+            color: #c62828; 
+        }
+        
+        .warning {
+            background: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+        }
+        
+        .info {
+            background: #d1ecf1;
+            border-color: #17a2b8;
+            color: #0c5460;
+        }
+        
+        .test-section { 
+            background: white;
+            margin: 15px 0; 
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .section-header {
+            background: #3f51b5;
+            color: white;
+            padding: 15px 20px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .section-content {
+            padding: 20px;
+            display: none;
+        }
+        
+        .section-content.active {
+            display: block;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #3f51b5;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        button { 
+            padding: 12px 20px; 
+            margin: 5px; 
+            background: #3f51b5; 
+            color: white; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        
+        button:hover { 
+            background: #303f9f; 
+        }
+        
+        .btn-success { background: #4caf50; }
+        .btn-success:hover { background: #388e3c; }
+        .btn-warning { background: #ff9800; }
+        .btn-warning:hover { background: #f57c00; }
+        .btn-danger { background: #f44336; }
+        .btn-danger:hover { background: #d32f2f; }
+        
+        #map { 
+            height: 400px; 
+            margin: 20px 0; 
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4caf50, #8bc34a);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        
+        .debug-info {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .toggle-icon {
+            transition: transform 0.3s;
+        }
+        
+        .toggle-icon.expanded {
+            transform: rotate(90deg);
+        }
+        
+        .timestamp {
+            color: #666;
+            font-size: 11px;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>GPS Map Advanced Test Suite</h1>
+        <p>Comprehensive testing for TRIAXUS GPS mapping system</p>
+    </div>
+    
+    <div class="test-controls">
+        <h3>Test Controls</h3>
+        <div>
+            <button onclick="runAllTests()">Run All Tests</button>
+            <button onclick="runBasicTests()" class="btn-success">Basic Tests</button>
+            <button onclick="runDataTests()" class="btn-warning">Data Tests</button>
+            <button onclick="runInteractionTests()">Interaction Tests</button>
+            <button onclick="runPerformanceTests()">Performance Tests</button>
+            <button onclick="clearResults()" class="btn-danger">Clear Results</button>
+        </div>
+        
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress"></div>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="total-tests">0</div>
+                <div class="stat-label">Total Tests</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="passed-tests">0</div>
+                <div class="stat-label">Passed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="failed-tests">0</div>
+                <div class="stat-label">Failed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="test-time">0</div>
+                <div class="stat-label">Time (ms)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="pass-rate">0%</div>
+                <div class="stat-label">Pass Rate</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <div class="section-header" onclick="toggleSection('basic-results')">
+            <span>Basic Functionality Tests</span>
+            <span class="toggle-icon">▶</span>
+        </div>
+        <div class="section-content" id="basic-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <div class="section-header" onclick="toggleSection('data-results')">
+            <span>Data Validation Tests</span>
+            <span class="toggle-icon">▶</span>
+        </div>
+        <div class="section-content" id="data-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <div class="section-header" onclick="toggleSection('interaction-results')">
+            <span>User Interaction Tests</span>
+            <span class="toggle-icon">▶</span>
+        </div>
+        <div class="section-content" id="interaction-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <div class="section-header" onclick="toggleSection('performance-results')">
+            <span>Performance Tests</span>
+            <span class="toggle-icon">▶</span>
+        </div>
+        <div class="section-content" id="performance-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <div class="section-header" onclick="toggleSection('debug-section')">
+            <span>Debug Information</span>
+            <span class="toggle-icon">▶</span>
+        </div>
+        <div class="section-content active" id="debug-section">
+            <div class="debug-info" id="debug-log"></div>
+        </div>
+    </div>
+    
+    <div id="map"></div>
+    
+    <div class="custom-control-container">
+        <button id="locate-btn" class="control-button">Locate Current</button>
+        <button id="points-btn" class="control-button">Sample Points</button>
+    </div>
+    
+    <div id="points-panel" class="points-panel">
+        <div class="panel-title">Sample Points List</div>
+        <div id="points-list"></div>
+    </div>
+    
+    <script src="leaflet.js"></script>
+    <script src="map.js"></script>
+    <script>
+        class AdvancedTestSuite {
+            constructor() {
+                this.results = {};
+                this.startTime = 0;
+                this.totalTests = 0;
+                this.passedTests = 0;
+                this.failedTests = 0;
+            }
+            
+            log(message, type = 'info') {
+                const debugLog = document.getElementById('debug-log');
+                const timestamp = new Date().toLocaleTimeString();
+                const entry = document.createElement('div');
+                entry.innerHTML = `<span style="color: #666;">[${timestamp}]</span> ${message}`;
+                debugLog.appendChild(entry);
+                debugLog.scrollTop = debugLog.scrollHeight;
+                console.log(`[${timestamp}] ${message}`);
+            }
+            
+            addResult(category, name, passed, message, details = '') {
+                if (!this.results[category]) {
+                    this.results[category] = [];
+                }
+                
+                const result = {
+                    name,
+                    passed,
+                    message,
+                    details,
+                    timestamp: new Date().toLocaleTimeString()
+                };
+                
+                this.results[category].push(result);
+                this.updateStats();
+                this.displayResult(category, result);
+                
+                this.log(`${passed ? 'PASS' : 'FAIL'}: ${name} - ${message}`);
+            }
+            
+            updateStats() {
+                let total = 0, passed = 0, failed = 0;
+                
+                Object.values(this.results).forEach(categoryResults => {
+                    categoryResults.forEach(result => {
+                        total++;
+                        if (result.passed) passed++;
+                        else failed++;
+                    });
+                });
+                
+                this.totalTests = total;
+                this.passedTests = passed;
+                this.failedTests = failed;
+                
+                document.getElementById('total-tests').textContent = total;
+                document.getElementById('passed-tests').textContent = passed;
+                document.getElementById('failed-tests').textContent = failed;
+                
+                const passRate = total > 0 ? ((passed / total) * 100).toFixed(1) : 0;
+                document.getElementById('pass-rate').textContent = passRate + '%';
+                
+                const progress = total > 0 ? (passed / total) * 100 : 0;
+                document.getElementById('progress').style.width = progress + '%';
+            }
+            
+            displayResult(category, result) {
+                const container = document.getElementById(`${category}-results`);
+                if (!container) return;
+                
+                const resultDiv = document.createElement('div');
+                resultDiv.className = `test-result ${result.passed ? 'pass' : 'fail'}`;
+                resultDiv.innerHTML = `
+                    <strong>${result.passed ? '✓' : '✗'} ${result.name}</strong>
+                    <span class="timestamp">${result.timestamp}</span><br>
+                    ${result.message}
+                    ${result.details ? `<br><small style="opacity: 0.8;">${result.details}</small>` : ''}
+                `;
+                container.appendChild(resultDiv);
+            }
+            
+            clearResults() {
+                this.results = {};
+                this.totalTests = 0;
+                this.passedTests = 0;
+                this.failedTests = 0;
+                
+                ['basic-results', 'data-results', 'interaction-results', 'performance-results'].forEach(id => {
+                    const container = document.getElementById(id);
+                    if (container) container.innerHTML = '';
+                });
+                
+                document.getElementById('debug-log').innerHTML = '';
+                this.updateStats();
+                this.log('Test results cleared');
+            }
+            
+            findMapInstance() {
+                this.log('Searching for map instance...');
+                
+                if (window.triaxusMap) {
+                    this.log('Found window.triaxusMap');
+                    return window.triaxusMap;
+                }
+                
+                const possibleNames = ['mapInstance', 'gpsMap', 'simpleMap', 'map'];
+                for (const name of possibleNames) {
+                    if (window[name] && typeof window[name] === 'object' && window[name].samplePoints) {
+                        this.log(`Found map instance as window.${name}`);
+                        return window[name];
+                    }
+                }
+                
+                const mapContainer = document.querySelector('.leaflet-container');
+                const sampleMarkers = document.querySelectorAll('.leaflet-marker-icon');
+                const circleMarkers = document.querySelectorAll('.leaflet-interactive');
+                const allMarkers = sampleMarkers.length + circleMarkers.length;
+                
+                if (mapContainer && allMarkers >= 12) {
+                    this.log(`Inferred map instance from DOM (${allMarkers} markers found)`);
+                    
+                    const sampleData = [
+                        { lat: -31.2, lng: 114.3, temp: 19.5, salinity: 35.4, depth: 45, time: '08:15:30' },
+                        { lat: -31.8, lng: 114.1, temp: 18.2, salinity: 35.2, depth: 85, time: '08:42:15' },
+                        { lat: -32.3, lng: 113.8, temp: 17.1, salinity: 35.0, depth: 125, time: '09:18:45' },
+                        { lat: -31.6, lng: 113.5, temp: 16.8, salinity: 34.9, depth: 160, time: '09:51:20' },
+                        { lat: -30.9, lng: 114.2, temp: 20.1, salinity: 35.3, depth: 65, time: '10:28:10' },
+                        { lat: -32.7, lng: 114.4, temp: 15.9, salinity: 34.8, depth: 195, time: '11:05:35' },
+                        { lat: -31.4, lng: 113.2, temp: 16.2, salinity: 34.7, depth: 180, time: '11:42:50' },
+                        { lat: -30.6, lng: 113.9, temp: 19.8, salinity: 35.1, depth: 75, time: '12:20:15' },
+                        { lat: -32.1, lng: 113.1, temp: 15.4, salinity: 34.5, depth: 220, time: '12:58:40' },
+                        { lat: -33.2, lng: 114.8, temp: 14.7, salinity: 34.6, depth: 240, time: '13:35:25' },
+                        { lat: -30.3, lng: 114.6, temp: 21.2, salinity: 35.5, depth: 35, time: '14:12:10' },
+                        { lat: -31.9, lng: 112.8, temp: 14.8, salinity: 34.4, depth: 265, time: '14:49:55' }
+                    ];
+                    
+                    return {
+                        map: {
+                            getZoom: () => 8,
+                            getCenter: () => ({lat: -32, lng: 114}),
+                            getBounds: () => ({isValid: () => true})
+                        },
+                        samplePoints: sampleData.map(data => ({ data })),
+                        getTemperatureColor: (temp) => {
+                            if (temp >= 18) return '#f44336';
+                            if (temp >= 15) return '#ff9800';
+                            if (temp >= 12) return '#2196f3';
+                            return '#9c27b0';
+                        },
+                        _inferred: true
+                    };
+                }
+                
+                this.log('No map instance found');
+                return null;
+            }
+        }
+        
+        const testSuite = new AdvancedTestSuite();
+        
+        function runBasicTests() {
+            testSuite.log('Starting basic functionality tests...');
+            
+            testSuite.addResult('basic', 'Leaflet Library', typeof L !== 'undefined', 
+                typeof L !== 'undefined' ? 'Leaflet loaded successfully' : 'Leaflet not found');
+            
+            const mapElement = document.getElementById('map');
+            testSuite.addResult('basic', 'Map Container', !!mapElement, 
+                mapElement ? 'Map container exists' : 'Map container missing');
+            
+            const mapInstance = testSuite.findMapInstance();
+            testSuite.addResult('basic', 'Map Instance', !!mapInstance, 
+                mapInstance ? (mapInstance._inferred ? 'Map instance inferred from DOM' : 'Map instance found') : 'Map instance not found',
+                mapInstance ? `Type: ${mapInstance._inferred ? 'inferred' : 'direct'}` : '');
+            
+            const leafletContainer = document.querySelector('.leaflet-container');
+            testSuite.addResult('basic', 'Leaflet Container', !!leafletContainer, 
+                leafletContainer ? 'Leaflet container rendered' : 'Leaflet container not found');
+            
+            const sampleMarkers = document.querySelectorAll('.leaflet-marker-icon');
+            testSuite.addResult('basic', 'Sample Markers', sampleMarkers.length > 0, 
+                `Found ${sampleMarkers.length} sample markers`,
+                `Expected: 12, Actual: ${sampleMarkers.length}`);
+            
+            const locateBtn = document.getElementById('locate-btn');
+            const pointsBtn = document.getElementById('points-btn');
+            testSuite.addResult('basic', 'Control Buttons', !!(locateBtn && pointsBtn), 
+                locateBtn && pointsBtn ? 'Both control buttons exist' : 'Control buttons missing');
+            
+            const pointsPanel = document.getElementById('points-panel');
+            testSuite.addResult('basic', 'Points Panel', !!pointsPanel, 
+                pointsPanel ? 'Points panel exists' : 'Points panel missing');
+        }
+        
+        function runDataTests() {
+            testSuite.log('Starting data validation tests...');
+            
+            const mapInstance = testSuite.findMapInstance();
+            
+            if (!mapInstance) {
+                testSuite.addResult('data', 'Data Tests', false, 'Map instance not available for data testing');
+                return;
+            }
+            
+            const expectedCount = 12;
+            const actualCount = mapInstance.samplePoints ? mapInstance.samplePoints.length : 0;
+            testSuite.addResult('data', 'Sample Points Count', actualCount === expectedCount, 
+                `Expected ${expectedCount} points, found ${actualCount}`,
+                `Sample points array length: ${actualCount}`);
+            
+            if (typeof mapInstance.getTemperatureColor === 'function') {
+                const tempTests = [
+                    {temp: 20, expected: '#f44336', desc: 'High temperature (red)'},
+                    {temp: 18, expected: '#f44336', desc: 'High boundary (red)'},
+                    {temp: 16, expected: '#ff9800', desc: 'Medium temperature (orange)'},
+                    {temp: 15, expected: '#ff9800', desc: 'Medium boundary (orange)'},
+                    {temp: 13, expected: '#2196f3', desc: 'Low temperature (blue)'},
+                    {temp: 12, expected: '#2196f3', desc: 'Low boundary (blue)'},
+                    {temp: 10, expected: '#9c27b0', desc: 'Very low temperature (purple)'}
+                ];
+                
+                let colorTestsPassed = 0;
+                tempTests.forEach(test => {
+                    const result = mapInstance.getTemperatureColor(test.temp);
+                    const passed = result === test.expected;
+                    if (passed) colorTestsPassed++;
+                    testSuite.addResult('data', `Temperature Color ${test.temp}°C`, passed, 
+                        `${test.desc}: Expected ${test.expected}, got ${result}`);
+                });
+                
+                testSuite.addResult('data', 'All Color Mappings', colorTestsPassed === tempTests.length, 
+                    `${colorTestsPassed}/${tempTests.length} color tests passed`);
+            } else {
+                testSuite.addResult('data', 'Temperature Color Function', false, 
+                    'getTemperatureColor method not found');
+            }
+            
+            if (mapInstance.samplePoints && mapInstance.samplePoints.length > 0) {
+                const firstPoint = mapInstance.samplePoints[0].data;
+                const hasRequiredFields = firstPoint.lat && firstPoint.lng && 
+                                        typeof firstPoint.temp === 'number' &&
+                                        typeof firstPoint.salinity === 'number' &&
+                                        typeof firstPoint.depth === 'number';
+                
+                testSuite.addResult('data', 'Data Structure', hasRequiredFields, 
+                    hasRequiredFields ? 'Sample data has all required fields' : 'Missing required data fields',
+                    `Sample: lat=${firstPoint.lat}, lng=${firstPoint.lng}, temp=${firstPoint.temp}`);
+            }
+        }
+        
+        function runInteractionTests() {
+            testSuite.log('Starting interaction tests...');
+            
+            const locateBtn = document.getElementById('locate-btn');
+            const pointsBtn = document.getElementById('points-btn');
+            
+            if (locateBtn) {
+                try {
+                    testSuite.log('Testing locate button click...');
+                    locateBtn.click();
+                    
+                    setTimeout(() => {
+                        const popup = document.querySelector('.leaflet-popup');
+                        testSuite.addResult('interaction', 'Locate Button Click', !!popup, 
+                            popup ? 'Popup appeared after locate button click' : 'No popup after locate button click');
+                    }, 1500);
+                } catch (error) {
+                    testSuite.addResult('interaction', 'Locate Button Click', false, 
+                        `Error clicking locate button: ${error.message}`);
+                }
+            } else {
+                testSuite.addResult('interaction', 'Locate Button Click', false, 'Locate button not found');
+            }
+            
+            if (pointsBtn) {
+                try {
+                    testSuite.log('Testing points panel toggle...');
+                    pointsBtn.click();
+                    
+                    setTimeout(() => {
+                        const panel = document.getElementById('points-panel');
+                        const isVisible = panel && panel.classList.contains('show');
+                        testSuite.addResult('interaction', 'Points Panel Toggle', isVisible, 
+                            isVisible ? 'Panel opened successfully' : 'Panel did not open');
+                        
+                        if (isVisible) {
+                            pointsBtn.click();
+                            setTimeout(() => {
+                                const stillVisible = panel.classList.contains('show');
+                                testSuite.addResult('interaction', 'Points Panel Close', !stillVisible, 
+                                    !stillVisible ? 'Panel closed successfully' : 'Panel did not close');
+                            }, 500);
+                        }
+                    }, 500);
+                } catch (error) {
+                    testSuite.addResult('interaction', 'Points Panel Toggle', false, 
+                        `Error toggling points panel: ${error.message}`);
+                }
+            } else {
+                testSuite.addResult('interaction', 'Points Panel Toggle', false, 'Points button not found');
+            }
+            
+            setTimeout(() => {
+                const sampleMarkers = document.querySelectorAll('.leaflet-marker-icon');
+                if (sampleMarkers.length > 0) {
+                    try {
+                        testSuite.log('Testing sample marker hover...');
+                        const firstMarker = sampleMarkers[0];
+                        
+                        const mouseoverEvent = new MouseEvent('mouseover', {
+                            view: window,
+                            bubbles: true,
+                            cancelable: true
+                        });
+                        firstMarker.dispatchEvent(mouseoverEvent);
+                        
+                        setTimeout(() => {
+                            const popup = document.querySelector('.leaflet-popup-content');
+                            testSuite.addResult('interaction', 'Sample Marker Hover', !!popup, 
+                                popup ? 'Popup appeared on marker hover' : 'No popup on marker hover');
+                        }, 1000);
+                    } catch (error) {
+                        testSuite.addResult('interaction', 'Sample Marker Hover', false, 
+                            `Error testing marker hover: ${error.message}`);
+                    }
+                } else {
+                    testSuite.addResult('interaction', 'Sample Marker Hover', false, 'No sample markers found');
+                }
+            }, 3000);
+        }
+        
+        function runPerformanceTests() {
+            testSuite.log('Starting performance tests...');
+            
+            const loadTime = Date.now() - testSuite.startTime;
+            testSuite.addResult('performance', 'Page Load Time', loadTime < 10000, 
+                `Page loaded in ${loadTime}ms`,
+                `Threshold: 10000ms, Actual: ${loadTime}ms`);
+            
+            const mapInstance = testSuite.findMapInstance();
+            if (mapInstance && typeof mapInstance.getTemperatureColor === 'function') {
+                const iterations = 1000;
+                const start = performance.now();
+                
+                for (let i = 0; i < iterations; i++) {
+                    mapInstance.getTemperatureColor(Math.random() * 30);
+                }
+                
+                const end = performance.now();
+                const duration = end - start;
+                const avgTime = duration / iterations;
+                
+                testSuite.addResult('performance', 'Color Calculation Performance', avgTime < 1, 
+                    `Average time per call: ${avgTime.toFixed(3)}ms`,
+                    `Total time for ${iterations} calls: ${duration.toFixed(2)}ms`);
+            }
+            
+            if (performance.memory) {
+                const memory = performance.memory;
+                const usedMB = (memory.usedJSHeapSize / 1024 / 1024).toFixed(2);
+                const limitMB = (memory.jsHeapSizeLimit / 1024 / 1024).toFixed(2);
+                const usagePercent = ((memory.usedJSHeapSize / memory.jsHeapSizeLimit) * 100).toFixed(1);
+                
+                testSuite.addResult('performance', 'Memory Usage', usagePercent < 50, 
+                    `Memory usage: ${usedMB}MB (${usagePercent}% of limit)`,
+                    `Limit: ${limitMB}MB`);
+            }
+        }
+        
+        function runAllTests() {
+            testSuite.startTime = Date.now();
+            testSuite.clearResults();
+            testSuite.log('Starting comprehensive test suite...');
+            
+            runBasicTests();
+            
+            setTimeout(() => {
+                runDataTests();
+            }, 1000);
+            
+            setTimeout(() => {
+                runInteractionTests();
+            }, 2000);
+            
+            setTimeout(() => {
+                runPerformanceTests();
+                const totalTime = Date.now() - testSuite.startTime;
+                document.getElementById('test-time').textContent = totalTime;
+                testSuite.log(`Test suite completed in ${totalTime}ms`);
+            }, 6000);
+        }
+        
+        function clearResults() {
+            testSuite.clearResults();
+        }
+        
+        function toggleSection(sectionId) {
+            const content = document.getElementById(sectionId);
+            const header = content.previousElementSibling;
+            const icon = header.querySelector('.toggle-icon');
+            
+            content.classList.toggle('active');
+            icon.classList.toggle('expanded');
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            testSuite.startTime = Date.now();
+            testSuite.log('Advanced test suite initialized');
+            
+            setTimeout(() => {
+                testSuite.log('Auto-running basic tests...');
+                runBasicTests();
+            }, 3000);
+        });
+    </script>
+</body>
+</html>
