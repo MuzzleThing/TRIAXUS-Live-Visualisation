@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Quick database testing runner
-Provides a simple CLI to run various database tests
+数据库测试快速执行脚本
+提供简单的命令行界面来运行各种数据库测试
 """
 
 import os
@@ -10,7 +10,7 @@ import argparse
 import logging
 from pathlib import Path
 
-# Add project root to path
+# 添加项目根目录到路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from tests.advanced_database_test_runner import AdvancedDatabaseTestRunner
@@ -18,7 +18,7 @@ from tests.utils.test_utilities import setup_test_environment, cleanup_test_envi
 
 
 def setup_logging(verbose: bool = False):
-    """Configure logging"""
+    """设置日志配置"""
     log_level = logging.DEBUG if verbose else logging.INFO
     logging.basicConfig(
         level=log_level,
@@ -30,10 +30,10 @@ def setup_logging(verbose: bool = False):
 
 
 def check_environment():
-    """Check test environment"""
+    """检查测试环境"""
     print("检查测试环境...")
     
-    # Check required environment variables
+    # 检查必需的环境变量
     required_env_vars = ['DB_ENABLED']
     missing_vars = []
     
@@ -48,7 +48,7 @@ def check_environment():
         print("export DATABASE_URL=postgresql://username:password@localhost:5432/triaxus_test")
         return False
     
-    # Check database connection
+    # 检查数据库连接
     try:
         from triaxus.database.connection_manager import DatabaseConnectionManager
         conn_manager = DatabaseConnectionManager()
@@ -64,18 +64,18 @@ def check_environment():
 
 
 def run_quick_tests():
-    """Run quick tests"""
+    """运行快速测试"""
     print("\n" + "="*60)
     print("运行快速数据库测试")
     print("="*60)
     
     from tests.unit.database.test_connectivity import DatabaseConnectivityTester
     
-    # Only run connectivity tests
+    # 只运行连接性测试
     tester = DatabaseConnectivityTester()
     results = tester.run_all_tests()
     
-    # Display results
+    # 显示结果
     passed = sum(1 for result in results.values() if result.get('status') == 'PASSED')
     total = len(results)
     
@@ -90,7 +90,7 @@ def run_quick_tests():
 
 
 def run_full_tests(config_path: str, environment: str, categories: list):
-    """Run full test suite"""
+    """运行完整测试"""
     print("\n" + "="*60)
     print("运行完整数据库测试套件")
     print("="*60)
@@ -106,7 +106,7 @@ def run_full_tests(config_path: str, environment: str, categories: list):
 
 
 def generate_sample_config():
-    """Generate a sample configuration file"""
+    """生成示例配置文件"""
     config_path = Path("tests/database_test_config.yaml")
     
     if config_path.exists():
@@ -148,10 +148,10 @@ logging:
   file: "test_logs/database_tests.log"
 """
     
-    # Create directory
+    # 创建目录
     config_path.parent.mkdir(exist_ok=True)
     
-    # Write configuration file
+    # 写入配置文件
     with open(config_path, 'w', encoding='utf-8') as f:
         f.write(sample_config)
     
@@ -159,7 +159,7 @@ logging:
 
 
 def main():
-    """Main function"""
+    """主函数"""
     parser = argparse.ArgumentParser(
         description="TRIAXUS 数据库测试执行器",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -200,23 +200,23 @@ def main():
     
     args = parser.parse_args()
     
-    # Configure logging
+    # 设置日志
     setup_logging(args.verbose)
     
-    # Show help if no action specified
+    # 如果没有指定任何操作，显示帮助
     if not any([args.check_env, args.quick, args.full, args.cleanup, args.generate_config]):
         parser.print_help()
         return
     
-    # Generate configuration file
+    # 生成配置文件
     if args.generate_config:
         generate_sample_config()
         return
     
-    # Set up test environment
+    # 设置测试环境
     setup_test_environment()
     
-    # Check environment
+    # 检查环境
     if args.check_env:
         if check_environment():
             print("✅ 环境检查通过")
@@ -225,7 +225,7 @@ def main():
             sys.exit(1)
         return
     
-    # Clean up test data
+    # 清理测试数据
     if args.cleanup:
         print("清理测试数据...")
         if cleanup_test_environment():
@@ -234,12 +234,12 @@ def main():
             print("❌ 测试数据清理失败")
         return
     
-    # Check environment (before running tests)
+    # 检查环境（在运行测试前）
     if not check_environment():
         print("❌ 环境检查失败，无法运行测试")
         sys.exit(1)
     
-    # Run tests
+    # 运行测试
     success = True
     
     if args.quick:
@@ -248,7 +248,7 @@ def main():
     if args.full:
         success = run_full_tests(args.config, args.environment, args.categories)
     
-    # Exit status
+    # 退出状态
     if success:
         print("\n🎉 所有测试执行成功!")
         sys.exit(0)

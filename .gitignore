@@ -200,7 +200,12 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
-
+# Claude
+./.claude
+./CLAUDE.md
+# codex
+./.codex
+./AGENT.md
 # Marimo
 marimo/_static/
 marimo/_lsp/
