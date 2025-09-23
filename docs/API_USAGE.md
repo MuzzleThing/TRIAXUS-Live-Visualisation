@@ -620,3 +620,24 @@ report = analyzer.create_report()
 ```
 
 This comprehensive API documentation provides detailed examples for all aspects of the TRIAXUS Python API, from basic usage to advanced patterns and best practices.
+## Data Archiving Helpers
+
+```python
+from triaxus.data import DataArchiver, create_plot_test_data
+
+archiver = DataArchiver()
+data = create_plot_test_data(hours=1.0)
+
+summary = archiver.archive(
+    data,
+    source_name="qa_run",
+    metadata={"campaign": "QA", "instrument": "triaxus"},
+)
+
+print(summary["archive"]["data_path"])      # location of archived CSV/Gzip
+print(summary["quality_report"]["warnings"]) # structured QC warnings
+```
+
+`DataArchiver` automatically reuses `DataProcessor` and the enhanced validation
+layer, writing CSV (optionally gzipped), quality-control JSON, and optional
+metadata files to the configured archive directory.

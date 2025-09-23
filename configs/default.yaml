@@ -424,14 +424,27 @@ data_generation:
 
 # Data Processing Configuration
 data:
-  # Sampling
+  variables:
+    - time
+    - depth
+    - latitude
+    - longitude
+    - tv290c
+    - sal00
+    - sbeox0mm_l
+    - fleco_afl
+    - ph
+  required_variables:
+    - time
+    - depth
+    - latitude
+    - longitude
   sampling:
     default_size: 1000
     min_size: 100
     max_size: 10000
     random_seed: 42
-    
-  # Test data
+  
   test_data:
     default_hours: 2
     default_points: 120
@@ -440,14 +453,97 @@ data:
     depth_range: [0, 1000]
     lat_range: [-90, 90]
     lon_range: [-180, 180]
-    
-  # Validation
+  
   validation:
     level: "moderate"
     error_action: "warn"
     log_errors: true
     max_errors: 100
+    duplicate_subset: ["time", "depth", "latitude", "longitude"]
+    duplicate_threshold:
+      warn: 0.01
+      error: 0.05
+    defaults:
+      warn_missing_ratio: 0.1
+      error_missing_ratio: 0.35
+    anomaly_detection:
+      enabled: true
+      zscore_threshold: 4.0
+      min_samples: 30
+      warn_ratio: 0.02
+      error_ratio: 0.05
+    column_rules:
+      time:
+        description: "Measurement timestamp"
+        required: true
+        data_type: datetime
+      depth:
+        description: "Depth in meters"
+        required: true
+        data_type: numeric
+        min_value: 0
+        max_value: 6000
+        warn_missing_ratio: 0.05
+        error_missing_ratio: 0.2
+      latitude:
+        description: "Latitude in decimal degrees"
+        required: true
+        data_type: numeric
+        min_value: -90
+        max_value: 90
+      longitude:
+        description: "Longitude in decimal degrees"
+        required: true
+        data_type: numeric
+        min_value: -180
+        max_value: 180
+      tv290c:
+        description: "Water temperature (degC)"
+        data_type: numeric
+        min_value: -2
+        max_value: 40
+        warn_missing_ratio: 0.2
+      sal00:
+        description: "Salinity (PSU)"
+        data_type: numeric
+        min_value: 30
+        max_value: 42
+        warn_missing_ratio: 0.2
+      sbeox0mm_l:
+        description: "Dissolved oxygen (mg/L)"
+        data_type: numeric
+        min_value: 0
+        max_value: 15
+        warn_missing_ratio: 0.25
+      fleco_afl:
+        description: "Fluorescence (mg/m^3)"
+        data_type: numeric
+        min_value: 0
+        max_value: 5
+        warn_missing_ratio: 0.3
+      ph:
+        description: "pH"
+        data_type: numeric
+        min_value: 7.0
+        max_value: 9.0
+        warn_missing_ratio: 0.3
 
+archiving:
+  enabled: true
+  ensure_directory: true
+  directory: "archive"
+  include_timestamp: true
+  store_in_database: true
+  write_files: true
+  file_format: "csv"
+  compress: true
+  write_quality_report: true
+  report_format: "json"
+  retention_days: 365
+  metadata_fields:
+    - "instrument"
+    - "campaign"
+    - "notes"
 # Data Sampling Configuration
 data_sampling:
   # Sample sizes
