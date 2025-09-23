@@ -1,0 +1,244 @@
+# TRIAXUS 数据库测试配置文件
+# 此文件定义了数据库测试的各种配置参数
+
+# 测试环境配置
+test_environments:
+  development:
+    database_url: "postgresql://triaxus_user:dev_password@localhost:5432/triaxus_dev_test"
+    pool_size: 5
+    max_overflow: 10
+    echo: false
+    
+  integration:
+    database_url: "postgresql://triaxus_user:int_password@localhost:5432/triaxus_int_test"
+    pool_size: 10
+    max_overflow: 20
+    echo: false
+    
+  performance:
+    database_url: "postgresql://triaxus_user:perf_password@localhost:5432/triaxus_perf_test"
+    pool_size: 20
+    max_overflow: 50
+    echo: false
+
+# 测试数据配置
+test_data:
+  basic_test_size: 100          # 基础测试数据量
+  performance_test_size: 10000  # 性能测试数据量
+  stress_test_size: 100000      # 压力测试数据量
+  
+  # 测试数据范围
+  data_ranges:
+    depth: [0, 11000]           # 深度范围 (米)
+    latitude: [-90, 90]         # 纬度范围 (度)
+    longitude: [-180, 180]      # 经度范围 (度)
+    temperature: [-2, 40]       # 温度范围 (摄氏度)
+    salinity: [0, 50]          # 盐度范围 (PSU)
+
+# 性能测试基准
+performance_benchmarks:
+  insertion:
+    target_rate: 1000           # 目标插入速率 (records/sec)
+    max_response_time: 10       # 最大响应时间 (ms)
+    
+  query:
+    simple_query_time: 2        # 简单查询最大时间 (ms)
+    complex_query_time: 20      # 复杂查询最大时间 (ms)
+    aggregation_query_time: 100 # 聚合查询最大时间 (ms)
+    
+  concurrent:
+    max_connections: 50         # 最大并发连接数
+    connection_timeout: 30      # 连接超时时间 (秒)
+
+# 测试用例配置
+test_cases:
+  connectivity:
+    enabled: true
+    tests:
+      - basic_connection
+      - session_management
+      - connection_pool
+      - connection_timeout
+      - concurrent_connections
+      
+  schema:
+    enabled: true
+    tests:
+      - table_existence
+      - column_definitions
+      - index_verification
+      - constraint_validation
+      - view_verification
+      
+  mapping:
+    enabled: true
+    tests:
+      - dataframe_to_model
+      - model_to_dataframe
+      - field_mapping_accuracy
+      - data_type_conversion
+      - null_value_handling
+      
+  operations:
+    enabled: true
+    tests:
+      - data_insertion
+      - data_retrieval
+      - data_update
+      - data_deletion
+      - bulk_operations
+      - repository_pattern
+
+# 测试报告配置
+reporting:
+  output_formats:
+    - html
+    - json
+    - xml
+    
+  output_directory: "test_results"
+  
+  include_performance_charts: true
+  include_detailed_logs: true
+  
+  email_notifications:
+    enabled: false
+    recipients: []
+    smtp_server: ""
+    
+# 清理策略
+cleanup:
+  auto_cleanup: true            # 自动清理测试数据
+  preserve_on_failure: true    # 失败时保留数据用于调试
+  cleanup_timeout: 300         # 清理超时时间 (秒)
+
+# 重试策略
+retry:
+  max_retries: 3               # 最大重试次数
+  retry_delay: 5               # 重试延迟 (秒)
+  exponential_backoff: true    # 指数退避
+
+# 日志配置
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "test_logs/database_tests.log"
+  max_file_size: "10MB"
+  backup_count: 5
+
+# 监控配置
+monitoring:
+  enabled: true
+  metrics:
+    - cpu_usage
+    - memory_usage
+    - disk_io
+    - network_io
+    - database_connections
+    - query_execution_time
+    
+  alert_thresholds:
+    cpu_usage: 80              # CPU 使用率阈值 (%)
+    memory_usage: 85           # 内存使用率阈值 (%)
+    connection_pool_usage: 90  # 连接池使用率阈值 (%)
+
+# 安全测试配置
+security:
+  enabled: true
+  tests:
+    - sql_injection_protection
+    - connection_encryption
+    - access_control
+    - password_security
+    
+  sql_injection_payloads:
+    - "'; DROP TABLE oceanographic_data; --"
+    - "' OR '1'='1"
+    - "'; SELECT * FROM pg_user; --"
+    - "' UNION SELECT NULL, version(), NULL --"
+
+# 数据完整性测试配置
+data_integrity:
+  enabled: true
+  tests:
+    - constraint_validation
+    - foreign_key_integrity
+    - transaction_consistency
+    - data_recovery
+    
+  constraint_tests:
+    depth_positive: true       # 深度必须为正数
+    latitude_range: true       # 纬度范围检查
+    longitude_range: true      # 经度范围检查
+    datetime_not_null: true    # 时间不能为空
+
+# 负载测试配置
+load_testing:
+  enabled: false              # 默认禁用负载测试
+  duration: 300               # 测试持续时间 (秒)
+  ramp_up_time: 60           # 加载时间 (秒)
+  concurrent_users: 50        # 并发用户数
+  
+  scenarios:
+    - name: "read_heavy"
+      read_ratio: 80
+      write_ratio: 20
+      
+    - name: "write_heavy"
+      read_ratio: 20
+      write_ratio: 80
+      
+    - name: "balanced"
+      read_ratio: 50
+      write_ratio: 50
+
+# 故障注入测试配置
+fault_injection:
+  enabled: false              # 默认禁用故障注入
+  scenarios:
+    - name: "connection_loss"
+      probability: 0.1
+      duration: 5
+      
+    - name: "slow_query"
+      probability: 0.05
+      delay: 2
+      
+    - name: "memory_pressure"
+      probability: 0.02
+      intensity: "high"
+
+# 测试数据生成配置
+data_generation:
+  seed: 42                    # 随机种子，确保可重现性
+  
+  oceanographic_data:
+    time_range:
+      start: "2024-01-01T00:00:00Z"
+      end: "2024-12-31T23:59:59Z"
+    
+    depth_distribution: "uniform"  # uniform, normal, exponential
+    location_distribution: "global"  # global, regional, point
+    
+    parameter_correlations:
+      temperature_depth: -0.8    # 温度与深度的相关性
+      salinity_latitude: 0.3     # 盐度与纬度的相关性
+
+# 测试环境验证
+environment_validation:
+  required_extensions:
+    - uuid-ossp
+    - postgis              # 可选，用于地理空间功能
+    - timescaledb         # 可选，用于时间序列优化
+    
+  minimum_postgresql_version: "12.0"
+  required_python_packages:
+    - sqlalchemy
+    - pandas
+    - numpy
+    - psycopg2-binary
+    
+  system_requirements:
+    min_memory_gb: 4
+    min_disk_space_gb: 10
+    min_cpu_cores: 2
