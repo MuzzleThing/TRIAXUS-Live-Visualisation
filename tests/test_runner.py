@@ -57,6 +57,8 @@ class TestRunner:
         unit_tests = [
             ('test_models_and_mappers.py', 'Database Models & Mappers'),
             ('test_data_quality.py', 'Data Quality'),
+            ('test_quality_control_backend.py', 'Quality Control Backend'),
+            ('test_data_archiver.py', 'Data Archiver'),
             ('plots/test_time_series_plots.py', 'Time Series Plots'),
             ('plots/test_depth_profile_plots.py', 'Depth Profile Plots'),
             ('plots/test_contour_plots.py', 'Contour Plots'),

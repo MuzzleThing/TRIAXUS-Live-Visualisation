@@ -229,3 +229,28 @@ psql -U postgres -c "DROP ROLE IF EXISTS triaxus_user;"
 If you need an infrastructure-as-code variant (Docker or Ansible), we can add a companion setup in a future iteration.
 
 
+### Data Validation Settings
+
+The `data.validation` section in `configs/default.yaml` drives quality control for
+all processors and plotters. Key fields include:
+
+- `duplicate_subset` and `duplicate_threshold` for controlling acceptable levels of duplicated observations.
+- `defaults.warn_missing_ratio` / `defaults.error_missing_ratio` to set baseline thresholds for missing data per column.
+- `column_rules` to declare per-variable expectations (data type, bounds, and optional thresholds).
+- `anomaly_detection` parameters (z-score threshold, minimum samples, warning/error ratios) for basic outlier detection.
+
+These values can be overridden in `configs/custom.yaml` to tune validation for
+different deployments.
+
+### Archiving Settings
+
+The new `archiving` block configures how processed datasets are stored:
+
+- `directory`, `ensure_directory`, and `include_timestamp` control the destination for archived artefacts.
+- `file_format` (currently `csv`) and `compress` toggle on-disk output.
+- `write_quality_report` and `metadata_fields` determine whether JSON companions
+  containing quality metrics and metadata are persisted.
+- `store_in_database` enables database persistence via the existing ORM layer.
+
+These settings are used by `triaxus.data.Archiver` to produce consistent, auditable
+archives of processed TRIAXUS datasets.

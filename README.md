@@ -19,6 +19,7 @@ A modern, configuration-driven visualization toolkit for oceanographic research.
 - **Modern CLI**: Rich progress messages and comprehensive options
 - **Clean Architecture**: Modular, maintainable codebase
 - **Built-in Data Generator**: Synthetic oceanographic data including regional trajectories
+- **Quality Control & Archiving**: Configurable validation rules with automated archival outputs
 - **Comprehensive Testing**: Full test suite with organized output structure
 
 ## Quick Start
@@ -330,3 +331,4 @@ python tests/unit/test_models_and_mappers.py          # Models/mappers tests
 ## License
 
 MIT License. See `LICENSE` for details.
+
