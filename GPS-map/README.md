@@ -28,6 +28,9 @@ For testing, install the required dependencies:
 ```bash
 # Install testing dependencies
 pip install beautifulsoup4
+
+# Alternative command if 'pip' doesn't work
+py -m pip install beautifulsoup4
 ```
 
 ```bash
