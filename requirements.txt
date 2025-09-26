@@ -21,8 +21,8 @@ psycopg2-binary>=2.9.0  # PostgreSQL adapter
 sqlalchemy>=2.0.0       # SQL toolkit and ORM
 
 # Qt GUI dependencies
-PySide6>=6.5.0  # Qt6 Python bindings for GUI
-PySide6-WebEngine>=6.5.0  # Qt WebEngine for HTML content display
+# PySide6>=6.5.0  # Qt6 Python bindings for GUI
+# PySide6-WebEngine>=6.5.0  # Qt WebEngine for HTML content display
 
 # Plotting dependencies
 matplotlib>=3.5.0  # For matplotlib-based plotting in Qt GUI

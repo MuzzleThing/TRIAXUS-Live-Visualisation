@@ -1,8 +1,8 @@
 """
 TRIAXUS Data Module
 
-This module contains data processing, validation, and plot test data generation.
-Focused on generating test data for plot functionality testing.
+This module contains data processing, validation, archiving, and plot
+test data generation utilities.
 """
 
 from .processor import DataProcessor
@@ -14,6 +14,8 @@ from .simple_data_generator import (
     create_quick_plot_data,
     create_map_trajectory_data,
 )
+from .quality_control import ColumnQualityResult, QualityReport, generate_quality_report
+from .archiver import DataArchiver
 
 __all__ = [
     "DataProcessor",
@@ -23,4 +25,8 @@ __all__ = [
     "create_daily_plot_data",
     "create_quick_plot_data",
     "create_map_trajectory_data",
+    "ColumnQualityResult",
+    "QualityReport",
+    "generate_quality_report",
+    "DataArchiver",
 ]

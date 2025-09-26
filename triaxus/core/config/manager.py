@@ -173,6 +173,9 @@ class ConfigManager:
         """Get data sampling configuration"""
         return self.data_config_manager.get_data_sampling_config()
 
+    def get_archiving_config(self) -> Dict[str, Any]:
+        """Get data archiving configuration"""
+        return self.data_config_manager.get_archiving_config()
     def get_test_data_config(self) -> Dict[str, Any]:
         """Get test data configuration"""
         return self.data_config_manager.get_test_data_config()
@@ -293,3 +296,6 @@ class ConfigManager:
 
         env_key = f"TRIAXUS_{key.upper()}"
         return os.getenv(env_key, default)
+
+
+

@@ -161,20 +161,27 @@ class PlotterFactory:
         self, plot_type: str, config_manager: Optional[ConfigManager] = None
     ) -> list:
         """Get optional columns for a plot type"""
-        # First try to get from config if available
         if config_manager:
             try:
                 data_config = config_manager.get_data_config()
-                return data_config.get_available_variables()
+                if isinstance(data_config, dict):
+                    variables = data_config.get("variables", [])
+                    required = {col for col in self.get_required_columns(plot_type)}
+                    optional_vars = [var for var in variables if var not in required]
+                    if optional_vars:
+                        return optional_vars
             except Exception:
-                pass
+                self.logger.debug(
+                    "Unable to derive optional columns from configuration",
+                    exc_info=True,
+                )
 
-        # Fallback to hardcoded info
         info = self.get_plotter_info(plot_type)
         if info:
-            return info.get("optional_columns", [])
+            optional = info.get("optional_columns", [])
+            if optional:
+                return optional
         return []
-
     def get_plotter_description(self, plot_type: str) -> str:
         """Get description for a plot type"""
         info = self.get_plotter_info(plot_type)
@@ -300,3 +307,6 @@ class PlotterFactory:
             ] = "Best for depth-based analysis without time"
 
         return recommendations
+
+
+

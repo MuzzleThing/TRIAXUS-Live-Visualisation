@@ -12,7 +12,13 @@ from .plotters import (
     MapPlotter,
     PlotterFactory,
 )
-from .data import DataProcessor
+from .data import (
+    DataProcessor,
+    DataArchiver,
+    QualityReport,
+    ColumnQualityResult,
+    generate_quality_report,
+)
 from .utils import HTMLGenerator
 from .visualizer import TriaxusVisualizer
 
@@ -28,6 +34,10 @@ __all__ = [
     "MapPlotter",
     "PlotterFactory",
     "DataProcessor",
+    "DataArchiver",
+    "QualityReport",
+    "ColumnQualityResult",
+    "generate_quality_report",
     "HTMLGenerator",
 ]
 
@@ -35,3 +45,7 @@ __all__ = [
 __version__ = "1.0.0"
 __author__ = "TRIAXUS Visualization Team"
 __description__ = "TRIAXUS Oceanographic Data Visualization System"
+
+
+
+

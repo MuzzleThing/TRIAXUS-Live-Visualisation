@@ -10,10 +10,23 @@ from typing import Dict, Any, Optional, List, Tuple
 import logging
 
 from ..core.config import ConfigManager
+from ..core.data_validator import DataValidator
+from .quality_control import QualityReport
 
 
 class DataProcessor:
     """Data processor for TRIAXUS data processing"""
+
+    NUMERIC_COLUMNS = [
+        "depth",
+        "latitude",
+        "longitude",
+        "tv290c",
+        "fleco_afl",
+        "ph",
+        "sbeox0mm_l",
+        "sal00",
+    ]
 
     def __init__(self, config_manager: Optional[ConfigManager] = None):
         """
@@ -24,9 +37,13 @@ class DataProcessor:
         """
         self.config_manager = config_manager or ConfigManager()
         self.logger = logging.getLogger(__name__)
+        self.last_quality_report: Optional[QualityReport] = None
 
     def process(
-        self, data: pd.DataFrame, processing_config: Optional[Dict[str, Any]] = None
+        self,
+        data: pd.DataFrame,
+        processing_config: Optional[Dict[str, Any]] = None,
+        run_quality_checks: bool = False,
     ) -> pd.DataFrame:
         """
         Process data for plotting
@@ -34,12 +51,14 @@ class DataProcessor:
         Args:
             data: Input data
             processing_config: Processing configuration
+            run_quality_checks: Whether to compute a quality report after processing
 
         Returns:
             Processed data
         """
         try:
             processed_data = data.copy()
+            processed_data = self._normalize_columns(processed_data)
 
             # Apply processing steps
             processed_data = self._clean_data(processed_data)
@@ -51,27 +70,60 @@ class DataProcessor:
             processed_data = self._sort_data(processed_data)
 
             self.logger.info(f"Data processed: {len(processed_data)} rows")
+
+            quality_requested = run_quality_checks or bool(
+                (processing_config or {}).get("quality_checks", False)
+            )
+            self.last_quality_report = None
+            if quality_requested:
+                self.last_quality_report = self.run_quality_checks(processed_data)
+
             return processed_data
 
         except Exception as e:
             self.logger.error(f"Data processing failed: {e}")
             raise
 
+    def run_quality_checks(self, data: pd.DataFrame) -> QualityReport:
+        """Run validation-backed quality checks and return the report"""
+        validator = DataValidator(self.config_manager)
+        report = validator.generate_quality_report(data)
+        self.logger.info("Quality control report generated for processed data")
+        return report
+
+    def get_last_quality_report(self) -> Optional[QualityReport]:
+        """Return the last quality report computed during processing"""
+        return self.last_quality_report
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+    def _normalize_columns(self, data: pd.DataFrame) -> pd.DataFrame:
+        """Normalize column names to lowercase with underscores"""
+        rename_map: Dict[str, str] = {}
+        seen: Dict[str, int] = {}
+
+        for column in data.columns:
+            normalized = str(column).strip().lower().replace(" ", "_").replace("-", "_")
+            if normalized in seen:
+                seen[normalized] += 1
+                candidate = f"{normalized}_{seen[normalized]}"
+            else:
+                seen[normalized] = 0
+                candidate = normalized
+            rename_map[column] = candidate
+
+        return data.rename(columns=rename_map)
+
     def _clean_data(self, data: pd.DataFrame) -> pd.DataFrame:
         """Clean data by removing invalid entries"""
-        # Remove rows with all NaN values
         data = data.dropna(how="all")
-
-        # Remove duplicate rows
         data = data.drop_duplicates()
 
-        # Remove rows with invalid coordinates if present
         if "latitude" in data.columns:
             data = data[(data["latitude"] >= -90) & (data["latitude"] <= 90)]
         if "longitude" in data.columns:
             data = data[(data["longitude"] >= -180) & (data["longitude"] <= 180)]
-
-        # Remove rows with invalid depth if present
         if "depth" in data.columns:
             data = data[(data["depth"] >= 0) & (data["depth"] <= 11000)]
 
@@ -79,22 +131,10 @@ class DataProcessor:
 
     def _validate_data_types(self, data: pd.DataFrame) -> pd.DataFrame:
         """Validate and convert data types"""
-        # Convert time column to datetime if present
         if "time" in data.columns:
             data["time"] = pd.to_datetime(data["time"], errors="coerce")
 
-        # Convert numeric columns
-        numeric_columns = [
-            "depth",
-            "latitude",
-            "longitude",
-            "tv290C",
-            "flECO-AFL",
-            "ph",
-            "sbeox0Mm_L",
-            "sal00",
-        ]
-        for col in numeric_columns:
+        for col in self.NUMERIC_COLUMNS:
             if col in data.columns:
                 data[col] = pd.to_numeric(data[col], errors="coerce")
 
@@ -110,20 +150,17 @@ class DataProcessor:
         missing_strategy = config.get("missing_values", "drop")
 
         if missing_strategy == "drop":
-            # Drop rows with missing values in required columns
             required_columns = config.get("required_columns", [])
             if required_columns:
                 data = data.dropna(subset=required_columns)
 
         elif missing_strategy == "interpolate":
-            # Interpolate missing values for numeric columns
             numeric_columns = data.select_dtypes(include=[np.number]).columns
             for col in numeric_columns:
                 if data[col].isna().any():
                     data[col] = data[col].interpolate(method="linear")
 
         elif missing_strategy == "fill":
-            # Fill missing values with specified values
             fill_values = config.get("fill_values", {})
             for col, value in fill_values.items():
                 if col in data.columns:
@@ -150,23 +187,19 @@ class DataProcessor:
             if filter_type == "range":
                 min_val, max_val = filter_value
                 data = data[(data[column] >= min_val) & (data[column] <= max_val)]
-
             elif filter_type == "greater_than":
                 data = data[data[column] > filter_value]
-
             elif filter_type == "less_than":
                 data = data[data[column] < filter_value]
-
             elif filter_type == "equals":
                 data = data[data[column] == filter_value]
-
             elif filter_type == "not_equals":
                 data = data[data[column] != filter_value]
 
         return data
 
     def _sort_data(self, data: pd.DataFrame) -> pd.DataFrame:
-        """Sort data by time if available"""
+        """Sort data by time or depth when available"""
         if "time" in data.columns:
             data = data.sort_values("time").reset_index(drop=True)
         elif "depth" in data.columns:
@@ -182,13 +215,8 @@ class DataProcessor:
             self.logger.warning("No time column found for resampling")
             return data
 
-        # Set time as index
         data_indexed = data.set_index("time")
-
-        # Resample
         resampled = data_indexed.resample(frequency).mean()
-
-        # Reset index
         resampled = resampled.reset_index()
 
         self.logger.info(
@@ -213,16 +241,14 @@ class DataProcessor:
         """Calculate derived variables from existing data"""
         processed_data = data.copy()
 
-        # Calculate density if temperature and salinity are available
-        if "tv290C" in data.columns and "sal00" in data.columns:
+        if "tv290c" in data.columns and "sal00" in data.columns:
             processed_data["density"] = self._calculate_density(
-                processed_data["tv290C"], processed_data["sal00"]
+                processed_data["tv290c"], processed_data["sal00"]
             )
 
-        # Calculate temperature gradient if depth and temperature are available
-        if "depth" in data.columns and "tv290C" in data.columns:
+        if "depth" in data.columns and "tv290c" in data.columns:
             processed_data["temp_gradient"] = self._calculate_temperature_gradient(
-                processed_data["depth"], processed_data["tv290C"]
+                processed_data["depth"], processed_data["tv290c"]
             )
 
         return processed_data
@@ -231,8 +257,6 @@ class DataProcessor:
         self, temperature: pd.Series, salinity: pd.Series
     ) -> pd.Series:
         """Calculate seawater density using simplified equation"""
-        # Simplified density calculation (not accurate for all conditions)
-        # For accurate calculations, use proper seawater equation of state
         density = 1000 + 0.8 * salinity - 0.2 * temperature
         return density
 
@@ -240,15 +264,11 @@ class DataProcessor:
         self, depth: pd.Series, temperature: pd.Series
     ) -> pd.Series:
         """Calculate temperature gradient with depth"""
-        # Sort by depth
         sorted_data = pd.DataFrame(
             {"depth": depth, "temperature": temperature}
         ).sort_values("depth")
 
-        # Calculate gradient
         gradient = sorted_data["temperature"].diff() / sorted_data["depth"].diff()
-
-        # Align with original data
         gradient = gradient.reindex(temperature.index)
 
         return gradient
@@ -263,7 +283,6 @@ class DataProcessor:
             "numeric_summary": {},
         }
 
-        # Add numeric summary
         numeric_columns = data.select_dtypes(include=[np.number]).columns
         for col in numeric_columns:
             summary["numeric_summary"][col] = {
@@ -275,7 +294,6 @@ class DataProcessor:
                 "median": float(data[col].median()),
             }
 
-        # Add time range if available
         if "time" in data.columns:
             summary["time_range"] = {
                 "start": str(data["time"].min()),
@@ -283,7 +301,6 @@ class DataProcessor:
                 "duration": str(data["time"].max() - data["time"].min()),
             }
 
-        # Add depth range if available
         if "depth" in data.columns:
             summary["depth_range"] = {
                 "min": float(data["depth"].min()),
