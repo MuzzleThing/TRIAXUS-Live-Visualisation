@@ -59,6 +59,9 @@ class DataProcessor:
         try:
             processed_data = data.copy()
             processed_data = self._normalize_columns(processed_data)
+            
+            # Convert units for database compatibility
+            processed_data = self._convert_units(processed_data)
 
             # Apply processing steps
             processed_data = self._clean_data(processed_data)
@@ -114,6 +117,25 @@ class DataProcessor:
             rename_map[column] = candidate
 
         return data.rename(columns=rename_map)
+
+    def _convert_units(self, data: pd.DataFrame) -> pd.DataFrame:
+        """Convert units for database compatibility"""
+        converted_data = data.copy()
+        
+        # Convert oxygen from μmol/L to mg/L (multiply by 0.032)
+        if 'sbeox0mm_l' in converted_data.columns:
+            # Ensure numeric data before conversion
+            numeric_data = pd.to_numeric(converted_data['sbeox0mm_l'], errors='coerce')
+            converted_data['sbeox0mm_l'] = numeric_data * 0.032
+            self.logger.info("Converted oxygen (sensor 1) from μmol/L to mg/L")
+        
+        if 'sbeox1mm_l' in converted_data.columns:
+            # Ensure numeric data before conversion
+            numeric_data = pd.to_numeric(converted_data['sbeox1mm_l'], errors='coerce')
+            converted_data['sbeox1mm_l'] = numeric_data * 0.032
+            self.logger.info("Converted oxygen (sensor 2) from μmol/L to mg/L")
+        
+        return converted_data
 
     def _clean_data(self, data: pd.DataFrame) -> pd.DataFrame:
         """Clean data by removing invalid entries"""

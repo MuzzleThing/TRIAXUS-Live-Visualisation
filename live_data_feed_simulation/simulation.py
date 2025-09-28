@@ -1565,6 +1565,50 @@ def main():
     live_cb = None
     if args.live:
         fields = [s.strip() for s in args.live_fields.split(",") if s.strip()]
+        # Create LivePrinter instance
+        class LivePrinter:
+            """Prints a compact summary of selected fields every N rows."""
+            def __init__(self, every: int = 24, fields: Optional[List[str]] = None):
+                self.every = max(1, int(every))
+                self._n = 0
+                default = ["scan", "timeS", "latitude", "longitude", "prDM", "t090C", "sal00"]
+                fields = fields or default
+                indices = []
+                labels = []
+                for f in fields:
+                    key = f.strip()
+                    if not key:
+                        continue
+                    idx = VAR_INDEX_LC.get(key.lower())
+                    if idx is not None:
+                        indices.append(idx)
+                        labels.append(VAR_KEYS[idx])
+                self._indices = indices
+                self._labels = labels
+
+            def __call__(self, row: List[float]):
+                self._n += 1
+                if (self._n % self.every) != 0:
+                    return
+                parts = []
+                for label, idx in zip(self._labels, self._indices):
+                    val = row[idx]
+                    if label in ("latitude", "longitude"):
+                        parts.append(f"{label}={val:.5f}")
+                    elif label in ("timeS",):
+                        parts.append(f"{label}={val:.3f}")
+                    elif label in ("scan", "pumps"):
+                        parts.append(f"{label}={int(val)}")
+                    elif label in ("prDM",):
+                        parts.append(f"{label}={val:.2f}")
+                    elif label in ("t090C", "t190C", "sal00", "sal11", "CStarTr0"):
+                        parts.append(f"{label}={val:.3f}")
+                    else:
+                        parts.append(f"{label}={val}")
+                try:
+                    print("live:", ", ".join(parts), flush=True)
+                except Exception:
+                    pass
         live_cb = LivePrinter(every=args.live_every, fields=fields)
     route_cb = None
     if args.route_picker:
@@ -1691,56 +1735,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-# Short variable keys matching column order (before ':')
-VAR_KEYS = [name.split(":")[0] for name in NAME_LIST]
-VAR_INDEX = {k: i for i, k in enumerate(VAR_KEYS)}
-VAR_INDEX_LC = {k.lower(): i for k, i in VAR_INDEX.items()}
-
-
-class LivePrinter:
-    """Prints a compact summary of selected fields every N rows.
-
-    Called from the writer thread; keep it fast and robust.
-    """
-
-    def __init__(self, every: int = 24, fields: Optional[List[str]] = None):
-        self.every = max(1, int(every))
-        self._n = 0
-        default = ["scan", "timeS", "latitude", "longitude", "prDM", "t090C", "sal00"]
-        fields = fields or default
-        indices = []
-        labels = []
-        for f in fields:
-            key = f.strip()
-            if not key:
-                continue
-            idx = VAR_INDEX_LC.get(key.lower())
-            if idx is not None:
-                indices.append(idx)
-                labels.append(VAR_KEYS[idx])
-        self._indices = indices
-        self._labels = labels
-
-    def __call__(self, row: List[float]):
-        self._n += 1
-        if (self._n % self.every) != 0:
-            return
-        parts = []
-        for label, idx in zip(self._labels, self._indices):
-            val = row[idx]
-            if label in ("latitude", "longitude"):
-                parts.append(f"{label}={val:.5f}")
-            elif label in ("timeS",):
-                parts.append(f"{label}={val:.3f}")
-            elif label in ("scan", "pumps"):
-                parts.append(f"{label}={int(val)}")
-            elif label in ("prDM",):
-                parts.append(f"{label}={val:.2f}")
-            elif label in ("t090C", "t190C", "sal00", "sal11", "CStarTr0"):
-                parts.append(f"{label}={val:.3f}")
-            else:
-                parts.append(f"{label}={val}")
-        try:
-            print("live:", ", ".join(parts), flush=True)
-        except Exception:
-            pass

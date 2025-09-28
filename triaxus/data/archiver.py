@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 import logging
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional, Dict, Any
 
@@ -165,15 +165,25 @@ class DataArchiver:
 
         try:
             repository = DataSourceRepository(db_source.connection_manager)
-            record = DataSource(
-                filename=metadata.get("filename", source_name),
-                file_type=metadata.get("file_type", "DATAFRAME"),
-                file_size=metadata.get("file_size"),
-                file_hash=metadata.get("file_hash"),
-                total_records=metadata.get("total_records", len(data)),
-                processing_status=metadata.get("status", "archived"),
-            )
-            repository.create(record)
+            filename = metadata.get("filename", source_name)
+            
+            # Check if data source already exists
+            existing = repository.get_by_filename(filename)
+            if existing:
+                self.logger.info(f"Data source {filename} already exists, updating status")
+                repository.update_status(filename, metadata.get("status", "archived"), 
+                                       metadata.get("total_records", len(data)))
+            else:
+                # Create new data source record
+                record = DataSource(
+                    filename=filename,
+                    file_type=metadata.get("file_type", "DATAFRAME"),
+                    file_size=metadata.get("file_size"),
+                    file_hash=metadata.get("file_hash"),
+                    total_records=metadata.get("total_records", len(data)),
+                    processing_status=metadata.get("status", "archived"),
+                )
+                repository.create(record)
         except Exception as exc:
             self.logger.warning(
                 f"Data archived but metadata could not be recorded: {exc}"
@@ -197,6 +207,6 @@ class DataArchiver:
     def _build_base_name(self, source_name: str) -> str:
         sanitized = re.sub(r"[^A-Za-z0-9_-]+", "_", source_name.strip().lower()) or "dataset"
         if self.archiving_config.get("include_timestamp", True):
-            timestamp = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+            timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
             return f"{sanitized}_{timestamp}"
         return sanitized

@@ -16,6 +16,14 @@ from .simple_data_generator import (
 )
 from .quality_control import ColumnQualityResult, QualityReport, generate_quality_report
 from .archiver import DataArchiver
+from .cnv_reader import CNVFileReader
+from .cnv_batch_processor import (
+    CNVBatchProcessor,
+    main as process_cnv_files, 
+    test_cnv_reader, 
+    get_cnv_source_directory
+)
+from .cnv_realtime_processor import CNVRealtimeProcessor
 
 __all__ = [
     "DataProcessor",
@@ -29,4 +37,10 @@ __all__ = [
     "QualityReport",
     "generate_quality_report",
     "DataArchiver",
+    "CNVFileReader",
+    "CNVBatchProcessor",
+    "CNVRealtimeProcessor",
+    "process_cnv_files",
+    "test_cnv_reader",
+    "get_cnv_source_directory",
 ]

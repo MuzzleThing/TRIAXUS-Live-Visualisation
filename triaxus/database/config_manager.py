@@ -25,6 +25,15 @@ class SecureDatabaseConfigManager:
         """
         self.config_manager = config_manager
         self.logger = logging.getLogger(__name__)
+        
+        # If no config manager provided, try to get from main config
+        if self.config_manager is None:
+            try:
+                from ..core.config import ConfigManager
+                main_config = ConfigManager()
+                self.config_manager = main_config.settings
+            except Exception as e:
+                self.logger.warning(f"Could not get main config manager: {e}")
 
     def get_database_config(self) -> Dict[str, Any]:
         """
@@ -192,7 +201,13 @@ class SecureDatabaseConfigManager:
             True if URL format is valid, False otherwise
         """
         try:
-            return url.startswith('postgresql://') and '@' in url and ':' in url
+            # Support both PostgreSQL and SQLite
+            if url.startswith('postgresql://'):
+                return '@' in url and ':' in url
+            elif url.startswith('sqlite://'):
+                return True
+            else:
+                return False
         except Exception:
             return False
 
