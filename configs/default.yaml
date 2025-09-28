@@ -4,7 +4,7 @@
 #  IMPORTANT: DO NOT MODIFY THIS FILE DIRECTLY, OTHERWISE YOUR CUSTOMIZATIONS MIGHT MESS UP THE SYSTEM.
 # 
 # To customize settings:
-# 1. Copy configs/examples/custom.yaml to configs/custom.yaml
+# 1. Copy configs/examples/custom.example.yaml to configs/custom.yaml
 # 2. Modify only the settings you want to change in custom.yaml
 # 3. The system will automatically merge custom.yaml with this default file
 # 
@@ -417,6 +417,68 @@ data_generation:
   # Amplitude factors
   amplitude_factors:
     temperature: 4.0
+
+# =============================================================================
+# CNV PROCESSING CONFIGURATION
+# =============================================================================
+cnv_processing:
+  # Source directory for CNV files
+  source_directory: "testdataQC"
+  
+  # Processing options
+  auto_process: false
+  batch_size: 1000
+  
+  # Real-time ingestion (watch mode)
+  realtime:
+    enabled: false                 # Enable periodic CNV ingestion
+    interval_seconds: 60           # Poll interval in seconds
+    plot_after_ingest: true        # Generate quick plots after each ingest cycle
+    plot_output_dir: "tests/output" # Where to write generated plots
+    file_patterns:                 # Realtime file patterns (override top-level file_patterns if set)
+      - "*.cnv"
+      - "*.CNV"
+    min_age_seconds: 5             # Only process files older than this (avoid half-written files)
+    state_file: ".runtime/cnv_seen.json"  # Persist processed file states across restarts
+  
+  # Output options
+  log_file: "cnv_processing.log"
+  verbose: true
+  
+  # File patterns
+  file_patterns:
+    - "*.cnv"
+    - "*.CNV"
+  
+  # Quality control
+  quality_control:
+    enabled: true
+    strict_mode: false
+    skip_invalid_files: true
+
+# =============================================================================
+# DATABASE CONFIGURATION
+# =============================================================================
+database:
+  # Enable/disable database functionality
+  enabled: true
+  
+  # PostgreSQL connection settings
+  url: "postgresql://user:password@localhost:5432/triaxus_db"
+  
+  # SQLAlchemy settings
+  echo: false  # Enable SQL query logging
+  
+  # Connection pool settings
+  pool_size: 5          # Number of connections to maintain in pool
+  max_overflow: 10      # Additional connections beyond pool_size
+  pool_timeout: 30      # Seconds to wait for connection from pool
+  pool_recycle: 3600    # Seconds before connection is recycled
+  
+  # Table configuration
+  table:
+    name: "oceanographic_data"
+    indexes: ["datetime", "depth", "latitude", "longitude"]
     salinity: 1.5
     oxygen: 2.0
     fluorescence: 0.3
@@ -527,20 +589,33 @@ data:
         min_value: 7.0
         max_value: 9.0
         warn_missing_ratio: 0.3
-
+# =============================================================================
+# DATA ARCHIVING CONFIGURATION
+# =============================================================================
 archiving:
-  enabled: true
-  ensure_directory: true
-  directory: "archive"
-  include_timestamp: true
-  store_in_database: true
-  write_files: true
-  file_format: "csv"
-  compress: true
-  write_quality_report: true
-  report_format: "json"
-  retention_days: 365
-  metadata_fields:
+  # Core toggles
+  enabled: true                 # Master switch for archiving workflow
+  write_files: true             # Write processed data to filesystem
+  store_in_database: true       # Persist records to database (honored if DB available)
+
+  # Filesystem destination
+  ensure_directory: true        # Create archive directory if missing
+  directory: "archive"          # Relative or absolute path for archive outputs
+  include_timestamp: true       # Append UTC timestamp to output filenames
+
+  # File format
+  file_format: "csv"            # Only 'csv' is supported currently
+  compress: true                # If true, writes .csv.gz; else writes .csv
+
+  # Quality report
+  write_quality_report: true    # If true, writes a JSON quality report next to data
+  report_format: "json"         # NOTE: Not yet implemented; JSON is always written
+
+  # Lifecycle management
+  retention_days: 365           # NOTE: Not yet implemented; no automatic cleanup
+
+  # Metadata control
+  metadata_fields:              # NOTE: Not yet implemented; metadata is not filtered by this list
     - "instrument"
     - "campaign"
     - "notes"

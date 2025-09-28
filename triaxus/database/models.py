@@ -4,9 +4,9 @@ SQLAlchemy ORM models for TRIAXUS visualization system
 This module defines the database models for oceanographic data storage.
 """
 
-from sqlalchemy import Column, String, Float, DateTime, Text, Index
+from sqlalchemy import Column, String, Float, DateTime, Text, Index, TIMESTAMP
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.sql import func
 import uuid
 from datetime import datetime
@@ -28,7 +28,7 @@ class OceanographicData(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, nullable=False)
     
     # Core measurement fields
-    datetime = Column(DateTime(timezone=True), nullable=False, index=True, comment='Measurement timestamp')
+    datetime = Column(TIMESTAMP(timezone=True), nullable=False, index=True, comment='Measurement timestamp (UTC)')
     depth = Column(Float, nullable=False, index=True, comment='Depth in meters')
     latitude = Column(Float, nullable=False, index=True, comment='Latitude in decimal degrees')
     longitude = Column(Float, nullable=False, index=True, comment='Longitude in decimal degrees')
@@ -42,7 +42,7 @@ class OceanographicData(Base):
     
     # Metadata fields
     source_file = Column(String(255), nullable=True, comment='Source data file name')
-    created_at = Column(DateTime(timezone=True), default=func.now(), nullable=False, comment='Record creation timestamp')
+    created_at = Column(TIMESTAMP(timezone=True), default=func.now(), nullable=False, comment='Record creation timestamp (UTC)')
     
     # Indexes for common query patterns
     __table_args__ = (
@@ -154,7 +154,7 @@ class DataSource(Base):
     processing_status = Column('status', String(50), nullable=True, default='processed', comment='Processing status')
     
     # Timestamps
-    processed_at = Column(DateTime(timezone=True), default=func.now(), nullable=False, comment='Processing timestamp')
+    processed_at = Column(TIMESTAMP(timezone=True), default=func.now(), nullable=False, comment='Processing timestamp (UTC)')
     
     def __repr__(self) -> str:
         """String representation of the model"""

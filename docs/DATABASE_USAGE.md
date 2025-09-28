@@ -19,10 +19,10 @@ This comprehensive guide covers PostgreSQL database setup, configuration, and us
 #### macOS (using Homebrew)
 ```bash
 # Install PostgreSQL
-brew install postgresql
+brew install postgresql@14
 
 # Start PostgreSQL service
-brew services start postgresql
+brew services start postgresql@14
 
 # Create a database user (optional)
 createuser -s triaxus_user
@@ -119,6 +119,16 @@ TRIAXUS creates two main tables using SQLAlchemy ORM models:
 1. **`oceanographic_data`** - Main data table for measurements
 2. **`data_sources`** - Metadata table for tracking data files
 
+### Important Note: Column Naming Convention
+
+All database column names use lowercase naming convention to ensure compatibility with PostgreSQL's identifier handling. This means:
+
+- `tv290C` → `tv290c` (Temperature)
+- `sbeox0Mm_L` → `sbeox0mm_l` (Dissolved Oxygen)  
+- `flECO_AFL` → `fleco_afl` (Fluorescence)
+- `filename` → `source_file` (in data_sources table)
+
+This naming convention is consistent throughout the codebase, SQL files, and documentation.
 ### Oceanographic Data Table
 
 The `OceanographicData` model creates the following table structure:
@@ -135,10 +145,10 @@ CREATE TABLE oceanographic_data (
     longitude DOUBLE PRECISION NOT NULL,
     
     -- Oceanographic parameters
-    tv290C DOUBLE PRECISION,           -- Temperature in Celsius
+    tv290c DOUBLE PRECISION,           -- Temperature in Celsius
     sal00 DOUBLE PRECISION,           -- Salinity in PSU
-    sbeox0Mm_L DOUBLE PRECISION,      -- Dissolved oxygen in mg/L
-    flECO_AFL DOUBLE PRECISION,      -- Fluorescence in mg/m³
+    sbeox0mm_l DOUBLE PRECISION,      -- Dissolved oxygen in mg/L
+    fleco_afl DOUBLE PRECISION,      -- Fluorescence in mg/m³
     ph DOUBLE PRECISION,              -- pH value
     
     -- Metadata fields
@@ -157,20 +167,41 @@ CREATE TABLE data_sources (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     
     -- Source information
-    filename VARCHAR(255) UNIQUE NOT NULL,
-    file_path VARCHAR(500),
-    file_size DOUBLE PRECISION,
+    source_file VARCHAR(255) UNIQUE NOT NULL,
+    file_type VARCHAR(50) DEFAULT 'CNV',
+    file_size BIGINT,
     file_hash VARCHAR(64),            -- File hash for integrity check
     
-    -- Processing metadata
-    total_records DOUBLE PRECISION,
-    processed_records DOUBLE PRECISION,
-    processing_status VARCHAR(50),
+    -- CNV file metadata
+    software_version VARCHAR(100),
+    temperature_sn VARCHAR(50),
+    conductivity_sn VARCHAR(50),
+    number_of_scans INTEGER,
+    number_of_cycles INTEGER,
+    sample_interval DOUBLE PRECISION,
+    start_time TIMESTAMP WITH TIME ZONE,
+    end_time TIMESTAMP WITH TIME ZONE,
     
-    -- Timestamps
-    first_seen TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    last_processed TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    -- Geographic metadata
+    nmea_latitude VARCHAR(50),
+    nmea_longitude VARCHAR(50),
+    initial_depth DOUBLE PRECISION,
+    
+    -- Processing metadata
+    processed_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(20) DEFAULT 'processed',  -- pending, processed, error
+    error_message TEXT,
+    
+    -- Data statistics
+    total_records INTEGER,
+    min_datetime TIMESTAMP WITH TIME ZONE,
+    max_datetime TIMESTAMP WITH TIME ZONE,
+    min_depth DOUBLE PRECISION,
+    max_depth DOUBLE PRECISION,
+    min_latitude DOUBLE PRECISION,
+    max_latitude DOUBLE PRECISION,
+    min_longitude DOUBLE PRECISION,
+    max_longitude DOUBLE PRECISION
 );
 ```
 
@@ -246,10 +277,10 @@ new_data = pd.DataFrame({
     'depth': [10.0, 15.0],
     'latitude': [-33.5, -33.6],
     'longitude': [115.0, 115.1],
-    'tv290C': [22.5, 22.3],
+    'tv290c': [22.5, 22.3],
     'sal00': [35.2, 35.1],
-    'sbeox0Mm_L': [5.8, 5.7],
-    'flECO-AFL': [1.2, 1.1],
+    'sbeox0mm_l': [5.8, 5.7],
+    'fleco_afl': [1.2, 1.1],
     'ph': [8.1, 8.0]
 })
 
@@ -359,7 +390,7 @@ record = OceanographicData(
     depth=10.0,
     latitude=-33.5,
     longitude=115.0,
-    tv290C=22.5,
+    tv290c=22.5,
     sal00=35.2
 )
 
@@ -450,7 +481,7 @@ record = OceanographicData(
     depth=10.0,
     latitude=-33.5,  # Valid latitude
     longitude=115.0,  # Valid longitude
-    tv290C=22.5
+    tv290c=22.5
 )
 
 # Validate data
@@ -534,7 +565,7 @@ conn_manager.connect()
 query = text("""
     SELECT 
         DATE_TRUNC('hour', datetime) as hour,
-        AVG(tv290C) as avg_temp,
+        AVG(tv290c) as avg_temp,
         COUNT(*) as record_count
     FROM oceanographic_data 
     WHERE datetime >= :start_date 
@@ -716,5 +747,57 @@ def efficient_data_import(csv_file, batch_size=1000):
     
     return total_imported
 ```
+
+## Real-time Database Integration
+
+TRIAXUS includes real-time data processing capabilities that automatically store processed CNV data to the database:
+
+### Real-time Data Flow
+
+1. **CNV Simulator** generates live data files
+2. **CNV Realtime Processor** processes and validates data
+3. **Data Archiver** stores data to database and filesystem
+4. **Realtime API Server** serves data to web dashboard
+
+### Real-time Configuration
+
+Configure real-time processing in `configs/realtime_test.yaml`:
+
+```yaml
+cnv_processing:
+  realtime:
+    enabled: true
+    interval_seconds: 60
+    plot_after_ingest: true
+    store_in_database: true
+    database:
+      enabled: true
+      url: "postgresql://triaxus_user:password@localhost:5432/triaxus_db"
+```
+
+### Real-time Data Access
+
+The real-time API server provides database-backed endpoints:
+
+```bash
+# Get latest data
+curl http://localhost:8080/api/latest_data
+
+# Get data with time filtering
+curl "http://localhost:8080/api/data?time_granularity=1h"
+
+# Check system status
+curl http://localhost:8080/api/status
+```
+
+### Web Dashboard
+
+Access the real-time dashboard at `http://localhost:8080/` to view:
+- Live time series plots
+- Depth profile visualizations
+- Contour plots
+- Map trajectory
+- Configurable time granularity (5m to 30d)
+- Customizable refresh rates (0.5s to 1hour)
 
 This guide covers all aspects of database integration with TRIAXUS, from initial setup to advanced usage patterns and troubleshooting, based on the actual implementation in the codebase.

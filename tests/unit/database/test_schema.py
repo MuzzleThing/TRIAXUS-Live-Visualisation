@@ -257,3 +257,21 @@ class DatabaseSchemaTester:
 if __name__ == "__main__":
     tester = DatabaseSchemaTester()
     results = tester.run_all_tests()
+
+
+def run_schema_unit_tests() -> bool:
+    """Reusable entrypoint for integration tests to invoke core schema checks.
+
+    Returns True if key schema tests pass; False otherwise.
+    """
+    tester = DatabaseSchemaTester()
+    table_ok = tester.test_table_existence().get("status") == "PASSED"
+    if not table_ok:
+        return False
+    ocean_ok = tester.test_oceanographic_data_schema().get("status") == "PASSED"
+    if not ocean_ok:
+        return False
+    data_sources_ok = tester.test_data_sources_schema().get("status") == "PASSED"
+    if not data_sources_ok:
+        return False
+    return True

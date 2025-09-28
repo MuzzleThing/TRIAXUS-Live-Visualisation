@@ -112,17 +112,30 @@ class DatabaseInitializer:
             table_config = self.config_manager.get_table_config()
             table_name = table_config['name']
 
-            # Check if table exists
-            check_table_sql = """
-            SELECT EXISTS (
-                SELECT FROM information_schema.tables 
-                WHERE table_name = :table_name
-            );
-            """
+            # Check if table exists - SQLite compatible version
+            connection_url = self.config_manager.get_connection_url()
+            
+            if connection_url.startswith('sqlite://'):
+                # SQLite syntax
+                check_table_sql = """
+                SELECT name FROM sqlite_master 
+                WHERE type='table' AND name=:table_name;
+                """
+            else:
+                # PostgreSQL syntax
+                check_table_sql = """
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_name = :table_name
+                );
+                """
 
             with engine.connect() as conn:
                 result = conn.execute(text(check_table_sql), {"table_name": table_name})
-                exists = result.fetchone()[0]
+                if connection_url.startswith('sqlite://'):
+                    exists = result.fetchone() is not None
+                else:
+                    exists = result.fetchone()[0]
 
             if exists:
                 self.logger.info(f"Table '{table_name}' verified")

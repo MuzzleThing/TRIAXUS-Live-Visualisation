@@ -127,29 +127,98 @@ Notes:
 - Production: never commit real passwords/tokens; rely on environment variables or secret stores.
 
 ### 7) Quick verification
-Run the quick test runner (DB connectivity + basic plotting):
+
+#### 7.1 Basic plotting tests
+Run the modern test runner (pytest-based):
 ```bash
 source .venv/bin/activate
-python tests/test_runner_quick.py
+
+# Run all tests
+python tests/run_tests.py
+
+# Run specific test categories
+python tests/run_tests.py --type unit
+python tests/run_tests.py --type integration
+python tests/run_tests.py --type e2e
+
+# Run with verbose output
+python tests/run_tests.py --verbose
+
+# Run specific test patterns
+python tests/run_tests.py --pattern database
+python tests/run_tests.py --pattern plot
+
+# Show test structure
+python tests/run_tests.py --structure
 ```
 
-Run the comprehensive end-to-end test:
-```bash
-python tests/test_comprehensive.py
-```
-
-Run the unified test runner:
-```bash
-python tests/test_runner.py
-```
-
-### 8) CLI usage sanity check
+#### 7.2 CLI usage sanity check
 ```bash
 python triaxus-plot time-series --variables tv290c,sal00 --output ts_demo.html
 python triaxus-plot map --map-style open-street-map --output map_demo.html
 ```
 
-### 9) Optional: Mapbox configuration
+#### 7.3 Real-time system tests
+
+**Start the complete real-time pipeline:**
+```bash
+# One-click start (recommended)
+python scripts/start_realtime_pipeline.py
+```
+
+**Manual start (alternative):**
+```bash
+# Start data simulation
+python live_data_feed_simulation/simulation.py \
+  --file testdataQC/live_realtime_demo.cnv \
+  --hz 1.0 \
+  --live-every 5 \
+  --start-city sydney \
+  --end-city melbourne \
+  --speed-knots 15 \
+  --noninteractive &
+
+# Start real-time processor
+python -m triaxus.data.cnv_realtime_processor \
+  --watch \
+  --config configs/realtime_test.yaml \
+  --verbose &
+
+# Start API server
+python realtime/realtime_api_server.py 8080 &
+```
+
+**Verify real-time components:**
+```bash
+# Check if processes are running
+ps aux | grep -E "(simulation|cnv_realtime_processor|realtime_api_server)"
+
+# Test API endpoint
+curl http://localhost:8080/api/latest_data
+
+# Check generated plots
+ls -la tests/output/realtime_plots/
+```
+
+**Access the web dashboard:**
+- Open http://localhost:8080 in your browser
+- Verify plots are updating with real-time data
+- Test different time granularities (5m, 15m, 30m, 1h, 6h, 12h, 24h, 3d, 7d, 30d, all)
+- Test different refresh rates (0.5s, 1s, 2s, 5s, 10s, 30s, 1min, 5min, 10min, 15min, 30min, 1hour, manual)
+- Default: 1 minute refresh, 1 hour time range
+
+**Stop the real-time pipeline:**
+```bash
+# One-click stop (recommended)
+python scripts/stop_realtime_pipeline.py
+
+# Or manually stop processes
+pkill -f simulation.py
+pkill -f cnv_realtime_processor
+pkill -f realtime_api_server
+```
+
+### 8) Optional: Mapbox configuration
 Mapbox enables high-quality online map tiles.
 
 - Set token via env:
@@ -165,25 +234,40 @@ MAPBOX:
 
 Without a token, the system uses offline/OSM fallbacks automatically.
 
-### 10) Directory layout (key paths)
+### 9) Directory layout (key paths)
 ```
 configs/
   default.yaml           # shipped defaults
   custom.yaml            # your overrides (optional)
+  realtime_test.yaml     # real-time testing configuration
 triaxus/database/sql/
   init_database.sql      # schema creation
 tests/
-  test_runner.py         # full suite
-  test_runner_quick.py   # fast checks
-  test_comprehensive.py  # end-to-end
+  run_tests.py           # modern pytest-based test runner
+  unit/                  # unit tests
+  integration/           # integration tests
+  e2e/                   # end-to-end tests
+  output/realtime_plots/ # generated real-time plots
+scripts/
+  start_realtime_pipeline.py  # one-click real-time start
+  stop_realtime_pipeline.py   # one-click real-time stop
+realtime/
+  realtime_api_server.py # API server for dashboard
+  dashboard.html         # web dashboard
+  dashboard.css          # dashboard styles
+  dashboard.js           # dashboard JavaScript
+live_data_feed_simulation/
+  simulation.py          # CNV data simulator
 docs/
   CONFIGURATION_GUIDE.md
-  TESTING.md
+  REALTIME_QUICK_START.md
+  REALTIME_DATA_PROCESSING.md
+  DATA_FLOW_DIAGRAM.md
 ```
 
  
 
-### 11) Troubleshooting
+### 10) Troubleshooting
 
 - PostgreSQL fails to start
   - macOS: `brew services restart postgresql@14`
@@ -206,16 +290,23 @@ docs/
   - Otherwise use `--map-style open-street-map`
 
 - Long-running tests
-  - Use `tests/test_runner_quick.py` during development
+  - Use `python tests/run_tests.py --type unit` during development
   - If a hang occurs, check for circular dependencies (already resolved in current codebase) and re-run with `-v` to inspect logs.
 
-### 12) Production considerations
+- Real-time pipeline issues
+  - Check if all processes are running: `ps aux | grep -E "(simulation|cnv_realtime_processor|realtime_api_server)"`
+  - Verify database connection: `curl http://localhost:8080/api/status`
+  - Check generated plots: `ls -la tests/output/realtime_plots/`
+  - Restart pipeline: `python scripts/stop_realtime_pipeline.py && python scripts/start_realtime_pipeline.py`
+  - Check logs: `tail -f processor.log` or `tail -f processor_debug.log`
+
+### 11) Production considerations
 - Use a dedicated PostgreSQL instance with regular backups
 - Set strong credentials via environment variables
 - Consider connection pooling parameters in SQLAlchemy engine (configured via settings)
 - Serve generated HTML through a static file server (nginx, S3 + CDN, etc.)
 
-### 13) Uninstall / clean up
+### 12) Uninstall / clean up
 ```bash
 deactivate
 rm -rf .venv

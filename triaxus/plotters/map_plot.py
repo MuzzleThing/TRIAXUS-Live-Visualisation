@@ -86,10 +86,32 @@ class MapPlotter(BasePlotter):
         """Compute lat/lon axis ranges with padding."""
         lat_min, lat_max = data["latitude"].min(), data["latitude"].max()
         lon_min, lon_max = data["longitude"].min(), data["longitude"].max()
-        lat_padding = (lat_max - lat_min) * padding
-        lon_padding = (lon_max - lon_min) * padding
+        
+        # Calculate spans
+        lat_span = lat_max - lat_min
+        lon_span = lon_max - lon_min
+        
+        # For very small spans, use minimum padding to ensure visibility
+        min_span = 0.001  # Minimum 0.001 degree span for visibility
+        
+        if lat_span < min_span:
+            lat_center = (lat_min + lat_max) / 2
+            lat_min = lat_center - min_span / 2
+            lat_max = lat_center + min_span / 2
+            lat_span = min_span
+            
+        if lon_span < min_span:
+            lon_center = (lon_min + lon_max) / 2
+            lon_min = lon_center - min_span / 2
+            lon_max = lon_center + min_span / 2
+            lon_span = min_span
+        
+        # Apply padding
+        lat_padding = lat_span * padding
+        lon_padding = lon_span * padding
         lataxis_range = [lat_min - lat_padding, lat_max + lat_padding]
         lonaxis_range = [lon_min - lon_padding, lon_max + lon_padding]
+        
         return lataxis_range, lonaxis_range
 
     def _get_dimensions_and_margins(self) -> tuple:

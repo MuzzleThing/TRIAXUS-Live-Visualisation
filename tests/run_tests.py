@@ -1,126 +1,211 @@
 #!/usr/bin/env python3
 """
-TRIAXUS Visualization System Test Runner
+TRIAXUS Test Suite - Modern Test Runner
 
-Runs all test modules and provides a comprehensive summary.
+This module provides a modern, pytest-based test runner for the TRIAXUS system.
+It organizes tests into logical categories and provides flexible execution options.
+
+Test Categories:
+- unit: Individual component tests (core, data, database, plotters, utils)
+- integration: Cross-component tests (workflows, visualization, database)
+- e2e: End-to-end system tests (full_system, performance)
+
+Usage:
+    python -m pytest tests/                    # Run all tests
+    python -m pytest tests/unit/               # Run unit tests only
+    python -m pytest tests/integration/        # Run integration tests only
+    python -m pytest tests/e2e/               # Run end-to-end tests only
+    python -m pytest tests/ -v                # Verbose output
+    python -m pytest tests/ -k "database"    # Run tests matching "database"
 """
 
-import sys
 import os
-from datetime import datetime
+import sys
+import subprocess
+import argparse
+from pathlib import Path
+from typing import List, Optional
 
-# Add the parent directory to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+# Add project root to Python path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
 
-
-def run_test_module(module_name, test_function):
-    """Run a test module and return success status"""
-    print(f"\n{'='*60}")
-    print(f"Running {module_name}")
-    print(f"{'='*60}")
-
-    try:
-        start_time = datetime.now()
-        success = test_function()
-        end_time = datetime.now()
-        duration = (end_time - start_time).total_seconds()
-
-        if success:
-            print(
-                f"\nPASS: {module_name} completed successfully in {duration:.2f} seconds"
-            )
-            return True
+class ModernTestRunner:
+    """Modern pytest-based test runner for TRIAXUS system"""
+    
+    def __init__(self):
+        self.project_root = project_root
+        self.tests_dir = self.project_root / "tests"
+        
+    def setup_environment(self):
+        """Setup test environment"""
+        print("Setting up test environment...")
+        
+        # Set test environment variables
+        os.environ['TESTING'] = 'true'
+        os.environ['DB_ENABLED'] = 'true'
+        os.environ['DATABASE_URL'] = 'postgresql://steven@localhost:5432/triaxus_test_db'
+        
+        # Ensure output directory exists
+        output_dir = self.tests_dir / "output"
+        output_dir.mkdir(exist_ok=True)
+        
+        print("Environment setup complete")
+    
+    def run_tests(self, 
+                  category: Optional[str] = None,
+                  verbose: bool = False,
+                  parallel: bool = False,
+                  coverage: bool = False,
+                  pattern: Optional[str] = None) -> int:
+        """Run tests with specified options"""
+        
+        self.setup_environment()
+        
+        # Build pytest command
+        cmd = ["python", "-m", "pytest"]
+        
+        # Add test directory or specific category
+        if category:
+            test_path = self.tests_dir / category
+            if not test_path.exists():
+                print(f"Test category '{category}' not found")
+                return 1
+            cmd.append(str(test_path))
         else:
-            print(f"\nFAIL: {module_name} failed")
-            return False
-
-    except Exception as e:
-        print(f"\nERROR: {module_name} failed with error: {e}")
-        import traceback
-
-        traceback.print_exc()
-        return False
-
+            cmd.append(str(self.tests_dir))
+        
+        # Add options
+        if verbose:
+            cmd.append("-v")
+        
+        if parallel:
+            cmd.extend(["-n", "auto"])  # Requires pytest-xdist
+        
+        if coverage:
+            cmd.extend(["--cov=triaxus", "--cov-report=html", "--cov-report=term"])
+        
+        if pattern:
+            cmd.extend(["-k", pattern])
+        
+        # Add configuration
+        cmd.extend([
+            "--tb=short",
+            "--strict-markers",
+            "--disable-warnings"
+        ])
+        
+        print(f"Running tests: {' '.join(cmd)}")
+        
+        try:
+            result = subprocess.run(cmd, cwd=self.project_root)
+            return result.returncode
+        except KeyboardInterrupt:
+            print("\nTests interrupted by user")
+            return 1
+        except Exception as e:
+            print(f"Error running tests: {e}")
+            return 1
+    
+    def run_unit_tests(self, verbose: bool = False) -> int:
+        """Run unit tests only"""
+        print("Running unit tests...")
+        return self.run_tests(category="unit", verbose=verbose)
+    
+    def run_integration_tests(self, verbose: bool = False) -> int:
+        """Run integration tests only"""
+        print("Running integration tests...")
+        return self.run_tests(category="integration", verbose=verbose)
+    
+    def run_e2e_tests(self, verbose: bool = False) -> int:
+        """Run end-to-end tests only"""
+        print("Running end-to-end tests...")
+        return self.run_tests(category="e2e", verbose=verbose)
+    
+    def run_performance_tests(self, verbose: bool = False) -> int:
+        """Run performance tests only"""
+        print("Running performance tests...")
+        return self.run_tests(category="e2e/performance", verbose=verbose)
+    
+    def run_database_tests(self, verbose: bool = False) -> int:
+        """Run database-related tests only"""
+        print("Running database tests...")
+        return self.run_tests(pattern="database", verbose=verbose)
+    
+    def run_visualization_tests(self, verbose: bool = False) -> int:
+        """Run visualization-related tests only"""
+        print("Running visualization tests...")
+        return self.run_tests(pattern="plot", verbose=verbose)
+    
+    def show_test_structure(self):
+        """Show the test directory structure"""
+        print("Test Directory Structure:")
+        print("=" * 50)
+        
+        def print_tree(path: Path, prefix: str = "", max_depth: int = 3, current_depth: int = 0):
+            if current_depth >= max_depth:
+                return
+            
+            items = sorted(path.iterdir())
+            for i, item in enumerate(items):
+                if item.name.startswith('.') or item.name == '__pycache__':
+                    continue
+                
+                is_last = i == len(items) - 1
+                current_prefix = "└── " if is_last else "├── "
+                print(f"{prefix}{current_prefix}{item.name}")
+                
+                if item.is_dir() and current_depth < max_depth - 1:
+                    next_prefix = prefix + ("    " if is_last else "│   ")
+                    print_tree(item, next_prefix, max_depth, current_depth + 1)
+        
+        print_tree(self.tests_dir)
+        print("=" * 50)
 
 def main():
-    """Run all test modules"""
-    print("TRIAXUS Visualization System - Test Suite")
-    print("=" * 60)
-    print(f"Test started at: {datetime.now()}")
-    print("=" * 60)
-
-    # Import test modules (reorganized structure)
-    from plots.test_time_series_plots import test_time_series_plots
-    from plots.test_depth_profile_plots import test_depth_profile_plots
-    from plots.test_contour_plots import test_contour_plots
-    from maps.test_map_trajectory import (
-        test_map_trajectory,
-        test_map_trajectory_extended,
-        test_map_trajectory_different_styles,
-    )
-    from themes.test_theme_functionality import test_theme_functionality
-    from test_data_quality import test_data_quality
-
-    # Define test modules
-    test_modules = [
-        ("Time Series Plots", test_time_series_plots),
-        ("Depth Profile Plots", test_depth_profile_plots),
-        ("Contour Plots", test_contour_plots),
-        ("Map Trajectory (Australia)", lambda: test_map_trajectory()),
-        ("Map Trajectory (Extended Australia)", lambda: test_map_trajectory_extended()),
-        ("Map Trajectory (Styles)", lambda: test_map_trajectory_different_styles()),
-        ("Theme Functionality", test_theme_functionality),
-        ("Data Quality", test_data_quality),
-    ]
-
-    # Run all tests
-    results = []
-    total_start_time = datetime.now()
-
-    for module_name, test_function in test_modules:
-        success = run_test_module(module_name, test_function)
-        results.append((module_name, success))
-
-    total_end_time = datetime.now()
-    total_duration = (total_end_time - total_start_time).total_seconds()
-
-    # Print summary
-    print(f"\n{'='*60}")
-    print("TEST SUMMARY")
-    print(f"{'='*60}")
-    print(f"Test completed at: {total_end_time}")
-    print(f"Total duration: {total_duration:.2f} seconds")
-    print()
-
-    passed = 0
-    failed = 0
-
-    for module_name, success in results:
-        status = "PASSED" if success else "FAILED"
-        print(f"{status} - {module_name}")
-        if success:
-            passed += 1
-        else:
-            failed += 1
-
-    print()
-    print(f"Total tests: {len(results)}")
-    print(f"Passed: {passed}")
-    print(f"Failed: {failed}")
-    print(f"Success rate: {(passed/len(results)*100):.1f}%")
-
-    if failed == 0:
-        print("\nSUCCESS: All tests passed successfully!")
-        print("Generated test plots are saved in tests/output/ directory")
-        print("You can open the HTML files in a web browser to view the plots")
+    """Main entry point for the test runner"""
+    parser = argparse.ArgumentParser(description="TRIAXUS Test Runner")
+    parser.add_argument("--category", choices=["unit", "integration", "e2e"], 
+                       help="Run tests for specific category")
+    parser.add_argument("--type", choices=["unit", "integration", "e2e", "performance", "database", "visualization"],
+                       help="Run specific type of tests")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
+    parser.add_argument("-p", "--parallel", action="store_true", help="Run tests in parallel")
+    parser.add_argument("-c", "--coverage", action="store_true", help="Generate coverage report")
+    parser.add_argument("-k", "--pattern", help="Run tests matching pattern")
+    parser.add_argument("--structure", action="store_true", help="Show test directory structure")
+    
+    args = parser.parse_args()
+    
+    runner = ModernTestRunner()
+    
+    if args.structure:
+        runner.show_test_structure()
         return 0
-    else:
-        print(
-            f"\nWARNING: {failed} test(s) failed. Please check the output above for details."
-        )
-        return 1
-
+    
+    # Run specific test type
+    if args.type:
+        if args.type == "unit":
+            return runner.run_unit_tests(args.verbose)
+        elif args.type == "integration":
+            return runner.run_integration_tests(args.verbose)
+        elif args.type == "e2e":
+            return runner.run_e2e_tests(args.verbose)
+        elif args.type == "performance":
+            return runner.run_performance_tests(args.verbose)
+        elif args.type == "database":
+            return runner.run_database_tests(args.verbose)
+        elif args.type == "visualization":
+            return runner.run_visualization_tests(args.verbose)
+    
+    # Run tests with specified options
+    return runner.run_tests(
+        category=args.category,
+        verbose=args.verbose,
+        parallel=args.parallel,
+        coverage=args.coverage,
+        pattern=args.pattern
+    )
 
 if __name__ == "__main__":
-    exit_code = main()
-    sys.exit(exit_code)
+    sys.exit(main())

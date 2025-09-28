@@ -8,3 +8,10 @@
 # THEME CONFIGURATION
 # =============================================================================
 theme: "dark"  # Set to dark theme for testing
+
+# =============================================================================
+# DATABASE CONFIGURATION
+# =============================================================================
+database:
+  enabled: true  # Enable database functionality
+  url: "postgresql://steven@localhost:5432/triaxus_db"

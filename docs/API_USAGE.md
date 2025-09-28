@@ -619,7 +619,185 @@ analyzer.load_data(hours=3.0)
 report = analyzer.create_report()
 ```
 
-This comprehensive API documentation provides detailed examples for all aspects of the TRIAXUS Python API, from basic usage to advanced patterns and best practices.
+## Real-time Data Integration
+
+TRIAXUS includes real-time data processing capabilities that can be integrated with the Python API:
+
+### Real-time Data Sources
+
+```python
+from triaxus.data.database_source import DatabaseDataSource
+from triaxus import TriaxusVisualizer
+
+# Initialize database connection for real-time data
+db = DatabaseDataSource()
+viz = TriaxusVisualizer()
+
+# Load real-time data from database
+if db.is_available():
+    # Get latest data (last 1000 records)
+    realtime_data = db.load_data(limit=1000)
+    
+    # Create real-time visualizations
+    time_series = viz.create_time_series_plot(
+        realtime_data, 
+        variables=["tv290c", "sal00"],
+        output_file="realtime_timeseries.html",
+        title="Real-time Oceanographic Data"
+    )
+    
+    # Create depth profile from real-time data
+    depth_profile = viz.create_depth_profile_plot(
+        realtime_data,
+        variables=["tv290c", "sbeox0mm_l"],
+        output_file="realtime_profile.html"
+    )
+```
+
+### Real-time API Integration
+
+```python
+import requests
+import pandas as pd
+from datetime import datetime
+
+def get_realtime_data(time_granularity="1h"):
+    """Fetch real-time data from API server"""
+    try:
+        response = requests.get(
+            f"http://localhost:8080/api/data",
+            params={"time_granularity": time_granularity}
+        )
+        response.raise_for_status()
+        return pd.DataFrame(response.json()['data'])
+    except requests.RequestException as e:
+        print(f"Failed to fetch real-time data: {e}")
+        return None
+
+# Get real-time data and create plots
+realtime_data = get_realtime_data("1h")
+if realtime_data is not None:
+    viz = TriaxusVisualizer()
+    
+    # Create real-time contour plot
+    contour_html = viz.create_contour_plot(
+        realtime_data,
+        variable="tv290c",
+        output_file="realtime_contour.html",
+        title="Real-time Temperature Contour"
+    )
+    
+    # Create real-time map
+    map_html = viz.create_map_plot(
+        realtime_data,
+        output_file="realtime_map.html",
+        title="Real-time Survey Trajectory"
+    )
+```
+
+### Real-time Monitoring Dashboard
+
+```python
+def create_realtime_dashboard():
+    """Create a comprehensive real-time monitoring dashboard"""
+    viz = TriaxusVisualizer(theme="oceanographic")
+    
+    # Get real-time data
+    db = DatabaseDataSource()
+    if not db.is_available():
+        print("Database not available, using simulated data")
+        from triaxus.data import create_plot_test_data
+        data = create_plot_test_data(hours=2.0)
+    else:
+        data = db.load_data(limit=500)
+    
+    # Create multiple plot types
+    plots = {
+        "time_series": viz.create_time_series_plot(
+            data, 
+            variables=["tv290c", "sal00", "sbeox0mm_l"],
+            output_file="dashboard_timeseries.html",
+            title="Real-time Oceanographic Variables"
+        ),
+        "contour": viz.create_contour_plot(
+            data,
+            variable="tv290c",
+            output_file="dashboard_contour.html",
+            title="Real-time Temperature Distribution"
+        ),
+        "depth_profile": viz.create_depth_profile_plot(
+            data,
+            variables=["tv290c", "sal00"],
+            output_file="dashboard_profile.html",
+            title="Real-time Depth Profile"
+        ),
+        "map": viz.create_map_plot(
+            data,
+            output_file="dashboard_map.html",
+            title="Real-time Survey Map"
+        )
+    }
+    
+    return plots
+
+# Create real-time dashboard
+dashboard_plots = create_realtime_dashboard()
+print(f"Created {len(dashboard_plots)} real-time plots")
+```
+
+### Real-time Data Processing
+
+```python
+from triaxus.data.cnv_realtime_processor import CNVRealtimeProcessor
+from triaxus.data.archiver import DataArchiver
+
+def process_realtime_cnv(cnv_file_path):
+    """Process CNV file and create real-time visualizations"""
+    # Initialize processor
+    processor = CNVRealtimeProcessor()
+    
+    # Process CNV file
+    result = processor.process_file_by_path(cnv_file_path)
+    
+    if result and result.get('records', 0) > 0:
+        print(f"Processed {result['records']} records from {result['filename']}")
+        
+        # Get processed data for visualization
+        archiver = DataArchiver()
+        # Data is automatically stored to database and filesystem
+        
+        return True
+    else:
+        print("Failed to process CNV file")
+        return False
+
+# Process a CNV file
+success = process_realtime_cnv("testdataQC/live_realtime_demo.cnv")
+```
+
+### Real-time Configuration
+
+```python
+from triaxus.core.config import ConfigManager
+
+def configure_realtime_processing():
+    """Configure real-time processing settings"""
+    config_manager = ConfigManager()
+    
+    # Load real-time configuration
+    realtime_config = config_manager.get('cnv_processing.realtime')
+    
+    print(f"Real-time processing enabled: {realtime_config.get('enabled', False)}")
+    print(f"Update interval: {realtime_config.get('interval_seconds', 60)} seconds")
+    print(f"Database storage: {realtime_config.get('store_in_database', False)}")
+    
+    return realtime_config
+
+# Configure real-time processing
+config = configure_realtime_processing()
+```
+
+This comprehensive API documentation provides detailed examples for all aspects of the TRIAXUS Python API, from basic usage to advanced patterns and best practices, including real-time data integration capabilities.
 ## Data Archiving Helpers
 
 ```python

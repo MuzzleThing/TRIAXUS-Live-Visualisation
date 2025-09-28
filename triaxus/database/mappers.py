@@ -176,6 +176,7 @@ class DataMapper:
                         except:
                             value = None
                     elif isinstance(value, pd.Timestamp):
+                        # Keep timezone information
                         value = value.to_pydatetime()
                 
                 model_data[model_field] = value
