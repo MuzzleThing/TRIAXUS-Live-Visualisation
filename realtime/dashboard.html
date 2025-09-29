@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRIAXUS Real-time Oceanographic Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+    <div class="header">
+        <h1>TRIAXUS Real-time Oceanographic Dashboard</h1>
+        <p>Live oceanographic data visualization and monitoring</p>
+    </div>
+    
+    <div class="controls">
+        <div class="control-group">
+            <label for="refreshRate">Refresh:</label>
+            <select id="refreshRate">
+                <option value="500">0.5s</option>
+                <option value="1000">1s</option>
+                <option value="2000">2s</option>
+                <option value="5000">5s</option>
+                <option value="10000">10s</option>
+                <option value="30000">30s</option>
+                <option value="60000" selected>1min</option>
+                <option value="300000">5min</option>
+                <option value="600000">10min</option>
+                <option value="900000">15min</option>
+                <option value="1800000">30min</option>
+                <option value="3600000">1hour</option>
+                <option value="0">Manual</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label for="plotType">Plot:</label>
+            <select id="plotType">
+                <option value="all" selected>All</option>
+                <option value="timeseries">Time Series</option>
+                <option value="profile">Profile</option>
+                <option value="map">Map</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label for="timeGranularity">Time Range:</label>
+            <select id="timeGranularity">
+                <option value="5m">Last 5 Minutes</option>
+                <option value="15m">Last 15 Minutes</option>
+                <option value="30m">Last 30 Minutes</option>
+                <option value="1h" selected>Last 1 Hour</option>
+                <option value="6h">Last 6 Hours</option>
+                <option value="12h">Last 12 Hours</option>
+                <option value="24h">Last 24 Hours</option>
+                <option value="3d">Last 3 Days</option>
+                <option value="7d">Last 7 Days</option>
+                <option value="30d">Last 30 Days</option>
+                <option value="all">All Data</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label for="mapZoom">Zoom:</label>
+            <select id="mapZoom">
+                <option value="6">6 (Wide)</option>
+                <option value="8">8</option>
+                <option value="10">10</option>
+                <option value="12">12</option>
+                <option value="14">14</option>
+                <option value="16">16</option>
+                <option value="18" selected>18 (Micro)</option>
+                <option value="20">20 (Detail)</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <button id="manualRefresh" style="padding: 5px 10px; border: 1px solid #ddd; border-radius: 4px; background: #f8f9fa; cursor: pointer;">Manual Refresh</button>
+        </div>
+    </div>
+    
+    <div class="status" id="status">
+        <strong>Status:</strong> <span id="statusText">Connecting...</span> | 
+        <strong>Last Update:</strong> <span id="lastUpdate">Never</span> | 
+        <strong>Records:</strong> <span id="recordCount">0</span>
+    </div>
+    
+    <div class="main-content">
+        <div class="charts-section">
+            <div class="chart-box">
+                <h3>Temperature</h3>
+                <div id="temp-plot"></div>
+            </div>
+            <div class="chart-box">
+                <h3>Salinity</h3>
+                <div id="salinity-plot"></div>
+            </div>
+            <div class="chart-box">
+                <h3>Oxygen</h3>
+                <div id="oxygen-plot"></div>
+            </div>
+            <div class="chart-box">
+                <h3>Depth Profile</h3>
+                <div id="profile-plot"></div>
+            </div>
+        </div>
+        
+        <div class="map-section">
+            <h3>Oceanographic Map</h3>
+            <div id="map-plot"></div>
+            <div class="legend">
+                <span style="color: #e74c3c;">Current Position</span> | 
+                <span style="color: #3498db;">Trajectory</span> | 
+                <span style="color: #95a5a6;">History</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>TRIAXUS Oceanographic Data Visualization System | Real-time Monitoring Dashboard</p>
+    </div>
+
+    <script src="dashboard.js"></script>
+</body>
+</html>

@@ -59,14 +59,22 @@ class ConfigManager:
         self.settings = Dynaconf(
             settings_files=settings_files,
             merge_enabled=True,
+            merge_keys=False,  # Disable key merging to allow list replacement
             silent=False,  # Enable logging to debug
         )
         
-        # Fallback: Load config directly with yaml if dynaconf fails
+        # Load config directly with yaml for better control over merging
         self._yaml_config = None
         try:
             with open(self.config_dir / "default.yaml", 'r') as f:
                 self._yaml_config = yaml.safe_load(f)
+            
+            # If custom config exists, merge it manually to handle list replacement
+            if self.custom_config_path and self.custom_config_path.exists():
+                with open(self.custom_config_path, 'r') as f:
+                    custom_config = yaml.safe_load(f)
+                    self._yaml_config = self._deep_merge(self._yaml_config, custom_config)
+                    logger.info(f"Loaded custom config from {self.custom_config_path}")
         except Exception as e:
             logger.warning(f"Failed to load YAML config directly: {e}")
 
@@ -77,6 +85,21 @@ class ConfigManager:
         self.ui_config_manager = UIConfigManager(self.settings, self._yaml_config)
 
         logger.info(f"ConfigManager initialized for environment: {environment}")
+
+    def _deep_merge(self, base_dict, override_dict):
+        """
+        Deep merge two dictionaries, with override_dict taking precedence.
+        Lists are replaced entirely, not merged.
+        """
+        result = base_dict.copy()
+        
+        for key, value in override_dict.items():
+            if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+                result[key] = self._deep_merge(result[key], value)
+            else:
+                result[key] = value
+                
+        return result
 
     # Theme management delegation
     def get_available_themes(self):
@@ -173,6 +196,13 @@ class ConfigManager:
         """Get data sampling configuration"""
         return self.data_config_manager.get_data_sampling_config()
 
+    def get_archiving_config(self) -> Dict[str, Any]:
+        """Get data archiving configuration"""
+        return self.data_config_manager.get_archiving_config()
+    
+    def get_database_config(self) -> Dict[str, Any]:
+        """Get database configuration"""
+        return self.settings.get("database", {})
     def get_test_data_config(self) -> Dict[str, Any]:
         """Get test data configuration"""
         return self.data_config_manager.get_test_data_config()
@@ -293,3 +323,6 @@ class ConfigManager:
 
         env_key = f"TRIAXUS_{key.upper()}"
         return os.getenv(env_key, default)
+
+
+

@@ -1,0 +1,24 @@
+* Sea-Bird SBE 9 Data File:
+* FileName = D:\triaxus\in2023_v06\in2023_v06_07\in2023_v06_07_003.hdr
+* Software Version Seasave V 7.26.7.110
+* Temperature SN = 5932
+* Conductivity SN = 3168
+* Number of Bytes Per Scan = 41
+* Number of Voltage Words = 4
+* Number of Scans Averaged by the Deck Unit = 1
+* Append System Time to Every Scan
+* System UpLoad Time = Oct 15 2023 17:53:55
+* NMEA Latitude = 35 12.66 S
+* NMEA Longitude = 154 19.90 E
+* NMEA UTC (Time) = Oct 15 2023  17:53:54
+* Store Lat/Lon Data = Append to Every Scan
+** Operator: David
+** CTD config:  
+** Ship: Investigator 
+** Cruise: in2020_v09 
+** Station:  7
+** Latitude:  
+** Longitude:  
+** Depth:  
+* System UTC = Oct 15 2023 17:53:55
+*END*

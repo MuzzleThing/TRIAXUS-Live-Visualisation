@@ -16,6 +16,10 @@ This document provides comprehensive examples and detailed usage instructions fo
 ### Installation and Setup
 
 ```bash
+# Create and activate virtual environment
+python3 -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
 # Install dependencies
 pip install -r requirements.txt
 
@@ -442,6 +446,71 @@ python triaxus-plot time-series --points-per-hour 10 --output efficient.html
 
 # For quick testing, use shorter time ranges
 python triaxus-plot time-series --data-hours 0.5 --output quick_test.html
+```
+
+## Real-time System Commands
+
+TRIAXUS includes real-time data processing capabilities accessible via helper scripts:
+
+### Real-time Pipeline Management
+
+```bash
+# Start complete real-time pipeline (simulator + processor + API server)
+python scripts/start_realtime_pipeline.py --config configs/realtime_test.yaml
+
+# Stop real-time pipeline
+python scripts/stop_realtime_pipeline.py
+
+# Check running processes
+ps aux | grep -E "(simulation|cnv_realtime_processor|realtime_api_server)"
+```
+
+### Real-time Data Simulation
+
+```bash
+# Start data simulator manually
+python live_data_feed_simulation/simulation.py \
+  --output testdataQC/live_realtime_demo.cnv \
+  --interval 5 \
+  --start-city sydney \
+  --end-city melbourne \
+  --speed-knots 15 \
+  --noninteractive
+```
+
+### Real-time Processing
+
+```bash
+# Start CNV real-time processor
+python -m triaxus.data.cnv_realtime_processor \
+  --config configs/realtime_test.yaml \
+  --verbose
+
+# Start API server
+python realtime/realtime_api_server.py --port 8080
+```
+
+### Real-time Dashboard Access
+
+- **URL**: http://localhost:8080/
+- **Features**: Live plots, configurable time granularity, refresh rates
+- **API Endpoints**: 
+  - `/api/latest_data` - Latest oceanographic data
+  - `/api/data?time_granularity=1h` - Filtered data
+  - `/api/status` - System status
+
+### Real-time Configuration
+
+Key settings in `configs/realtime_test.yaml`:
+
+```yaml
+cnv_processing:
+  realtime:
+    enabled: true
+    interval_seconds: 60        # Plot update interval
+    min_age_seconds: 0.1        # Minimum file age before processing
+    plot_after_ingest: true     # Generate plots after data ingestion
+    store_in_database: true     # Store data in PostgreSQL
 ```
 
 This comprehensive CLI guide provides detailed examples and troubleshooting information for all aspects of the TRIAXUS command-line interface.

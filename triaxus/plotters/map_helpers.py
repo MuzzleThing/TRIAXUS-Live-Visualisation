@@ -290,7 +290,7 @@ class MapHelpers:
         map_plot_config = MapHelpers._get_map_plot_config()
         zoom_levels = map_plot_config.get(
             "zoom_levels",
-            {"very_wide": 6, "wide": 8, "medium": 10, "small": 12, "very_small": 14},
+            {"very_wide": 6, "wide": 8, "medium": 10, "small": 12, "very_small": 14, "micro": 16},
         )
 
         if max_span > auto_zoom.get("very_wide", 2.0):
@@ -301,8 +301,12 @@ class MapHelpers:
             return zoom_levels.get("medium", 10)
         elif max_span > auto_zoom.get("small", 0.2):
             return zoom_levels.get("small", 12)
-        else:
+        elif max_span > auto_zoom.get("very_small", 0.01):
             return zoom_levels.get("very_small", 14)
+        else:
+            # For very small spans (like our CNV data with 0.0008 degree span)
+            # Use a very high zoom level to show the trajectory clearly
+            return zoom_levels.get("micro", 16)
 
     @staticmethod
     def get_style_config(

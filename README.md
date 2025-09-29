@@ -13,23 +13,97 @@ A modern, configuration-driven visualization toolkit for oceanographic research.
 - **Oceanographic Data**: Realistic oceanographic data with proper geographic coordinates
 - **Map Integration**: Mapbox styles with automatic offline fallbacks
 - **Professional Themes**: oceanographic (default), dark, default, high_contrast
-- **Real-time Visualization**: Time series with status indicators
+- **Real-time Visualization**: End-to-end real-time pipeline (simulator → processor → API → web dashboard)
 - **Configuration-driven**: Dynaconf-based, no hard-coded values
 - **High-quality Outputs**: HTML with bundled Plotly.js
 - **Modern CLI**: Rich progress messages and comprehensive options
 - **Clean Architecture**: Modular, maintainable codebase
 - **Built-in Data Generator**: Synthetic oceanographic data including regional trajectories
+- **Quality Control & Archiving**: Configurable validation rules with automated archival outputs
 - **Comprehensive Testing**: Full test suite with organized output structure
 
 ## Quick Start
 
-### Install dependencies
+### Install dependencies (with venv)
 
 ```bash
+# Create and activate virtual environment (macOS/Linux)
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Or on Windows (PowerShell)
+# python -m venv .venv
+# .venv\\Scripts\\Activate.ps1
+
+# Install project dependencies into the venv
 pip install -r requirements.txt
 ```
 
-### Database Setup (Optional)
+### Real-time Quick Start
+
+One-click start the full real-time pipeline (data simulator, CNV realtime processor, API server) inside the activated venv:
+
+```bash
+python scripts/start_realtime_pipeline.py --config configs/realtime_test.yaml
+```
+
+Then open the web dashboard:
+
+```
+http://127.0.0.1:8080/
+```
+
+Notes:
+- Default refresh interval: 1 minute (configurable from the dashboard)
+- Time granularity options: 5m, 15m, 30m, 1h, 6h, 12h, 24h
+- Data filtering uses UTC; display is in local time on the frontend
+- The oceanographic map is shown at the bottom; time series at the top
+
+Stop the pipeline (in the same activated venv):
+
+```bash
+python scripts/stop_realtime_pipeline.py
+```
+
+Manual (alternative) start for debugging:
+
+```bash
+# 1) Start the simulator (writes live_*.cnv)
+python live_data_feed_simulation/simulation.py --output testdataQC/live_realtime_demo.cnv --interval 5
+
+# 2) Start the realtime processor
+python -m triaxus.data.cnv_realtime_processor --config configs/realtime_test.yaml
+
+# 3) Start the API server (serves dashboard and JSON endpoints)
+python realtime/realtime_api_server.py --port 8080
+```
+
+Key configuration: `configs/realtime_test.yaml`
+
+![Dashboard](pictures/realtime_dashboard.jpeg)
+
+### Database Setup
+
+For full installation and configuration, see the Database sections in `docs/CONFIGURATION_GUIDE.md` (sections 4–6).
+
+Quick install (macOS/Linux):
+
+```bash
+# macOS (Homebrew)
+brew install postgresql@14 && brew services start postgresql@14
+
+# Linux (Debian/Ubuntu)
+sudo apt-get update && sudo apt-get install -y postgresql postgresql-contrib
+sudo systemctl enable postgresql && sudo systemctl start postgresql
+```
+
+Initialize a database (example; adjust creds as needed):
+
+```bash
+createdb triaxus_db
+export DATABASE_URL="postgresql://username:password@localhost:5432/triaxus_db"
+psql "$DATABASE_URL" -f triaxus/database/sql/init_database.sql
+```
 
 The system supports PostgreSQL database integration:
 
@@ -52,6 +126,8 @@ The system supports PostgreSQL database integration:
        # Store new data
        db.store_data(data, "my_survey.csv")
    ```
+
+See more details in `docs/CONFIGURATION_GUIDE.md`.
 
 3. **Database Integration with Visualization**:
    ```python
@@ -181,6 +257,16 @@ map_plot:
 - Mapbox token not provided: The CLI will warn and use offline/scattergeo fallback.
 - Variable names: Use existing columns from the generator, e.g., `tv290c`, `sal00`, `sbeox0mm_l`, `fleco_afl`, `ph`.
 - Custom size not applying (maps): Passing `--width`/`--height` works; the logic prioritizes CLI dimensions over defaults.
+- Real-time pipeline shows no data: ensure simulator, processor, and API server are running; try stopping, deleting the realtime state file, and starting again.
+- Dashboard manual refresh not working: browser cache can interfere; the dashboard uses `no-cache` headers and logs refresh events to the console.
+
+### Log Files
+
+All system logs are stored in the `logs/` directory:
+- **Real-time Processing**: `logs/cnv_realtime_processing.log`
+- **Batch Processing**: `logs/cnv_batch_processing.log`
+- **API Server**: `logs/api_server.log`
+- **Watcher Service**: `logs/cnv_watcher.log` (if using daemon mode)
 
 ## Project Structure
 
@@ -274,6 +360,19 @@ triaxus-plotter/
 │   └── utils/                             # Utilities
 │       ├── __init__.py                    # Subpackage init
 │       └── html_generator.py              # HTML writer for plots
+├── realtime/                              # Real-time web dashboard and API server
+│   ├── dashboard.html                     # Dashboard (served at /)
+│   ├── dashboard.css                      # Dashboard styles
+│   ├── dashboard.js                       # Dashboard logic
+│   └── realtime_api_server.py             # HTTP server for dashboard and data
+├── scripts/                               # Helper scripts
+│   ├── start_realtime_pipeline.py         # One-click start for realtime pipeline
+│   └── stop_realtime_pipeline.py          # One-click stop for realtime pipeline
+├── logs/                                  # System log files
+│   ├── cnv_realtime_processing.log        # Real-time processor logs
+│   ├── cnv_batch_processing.log           # Batch processor logs
+│   ├── api_server.log                     # API server logs
+│   └── cnv_watcher.log                    # Watcher service logs
 └── triaxus-plot                           # CLI entry point (executable)
 ```
 
@@ -330,3 +429,4 @@ python tests/unit/test_models_and_mappers.py          # Models/mappers tests
 ## License
 
 MIT License. See `LICENSE` for details.
+

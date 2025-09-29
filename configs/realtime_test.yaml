@@ -1,0 +1,17 @@
+# Real-time CNV processing configuration for testing
+cnv_processing:
+  # Source directory for CNV files
+  source_directory: "testdataQC"
+  
+  # Override default file patterns completely (use dynaconf list replacement)
+  file_patterns: ["live_*.cnv"]
+  
+  # Real-time ingestion (watch mode) - optimized for testing
+  realtime:
+    enabled: true                      # Enable periodic CNV ingestion
+    interval_seconds: 60               # Poll interval in seconds (10 seconds for faster updates)
+    plot_after_ingest: true           # Generate quick plots after each ingest cycle
+    plot_output_dir: "tests/output/realtime_plots" # Where to write generated plots
+    file_patterns: ["live_*.cnv"]     # Only process live generated files
+    min_age_seconds: 0.1              # Only process files older than this (avoid half-written files)
+    state_file: ".runtime/cnv_seen_realtime.json"  # Persist processed file states
