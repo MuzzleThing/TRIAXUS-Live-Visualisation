@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
-"""
-Start the complete TRIAXUS real-time data processing pipeline
-"""
+"""Start the complete TRIAXUS real-time data processing pipeline."""
 
-import subprocess
-import time
-import sys
+import argparse
 import os
 import signal
+import subprocess
+import sys
+import time
 import webbrowser
 from pathlib import Path
 
@@ -17,6 +16,20 @@ project_root = Path(__file__).parent.parent
 # Add project root to Python path
 import sys
 sys.path.insert(0, str(project_root))
+
+def parse_args(argv=None):
+    """Parse command line arguments for the pipeline starter."""
+
+    parser = argparse.ArgumentParser(
+        description="Start the TRIAXUS real-time data processing pipeline."
+    )
+    parser.add_argument(
+        "--no-browser",
+        action="store_true",
+        help="Do not automatically open the realtime dashboard in the default browser.",
+    )
+    return parser.parse_args(argv)
+
 
 def start_process(command, cwd=None, background=True):
     """Start a process and return the process object"""
@@ -41,8 +54,9 @@ def check_database():
         print(f"✗ Database connection failed: {e}")
         return False
 
-def main():
+def main(argv=None):
     """Start the complete real-time pipeline"""
+    args = parse_args(argv)
     print("=" * 60)
     print("TRIAXUS Real-time Data Processing Pipeline")
     print("=" * 60)
@@ -93,7 +107,8 @@ def main():
         # Step 4: Open dashboard
         print("\n4. Opening dashboard...")
         dashboard_url = "http://localhost:8080"
-        webbrowser.open(dashboard_url)
+        if not args.no_browser:
+            webbrowser.open(dashboard_url)
         
         print("\n" + "=" * 60)
         print("Pipeline started successfully!")
