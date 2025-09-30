@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-高级数据库测试执行器
-TRIAXUS 数据库测试的高级执行脚本，支持配置文件、报告生成、监控等功能
+Advanced database test runner
+Advanced execution script for TRIAXUS database tests, supporting configuration files, report generation, monitoring, and more
 """
 
 import os
@@ -17,10 +17,10 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 
-# 添加项目根目录到路径
+# Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# 导入测试模块
+# Import test modules
 from tests.unit.database.test_connectivity import DatabaseConnectivityTester
 from tests.unit.database.test_schema import DatabaseSchemaTester
 from tests.unit.database.test_mapping import DatabaseMappingTester
@@ -29,7 +29,7 @@ from tests.unit.database.test_operations import DatabaseOperationsTester
 
 @dataclass
 class TestResult:
-    """测试结果数据类"""
+    """Test result data class"""
     name: str
     status: str
     duration: float
@@ -38,15 +38,15 @@ class TestResult:
 
 
 class TestConfiguration:
-    """测试配置管理器"""
+    """Test configuration manager"""
     
     def __init__(self, config_path: str = "tests/database_test_config.yaml"):
-        """初始化配置管理器"""
+        """Initialize configuration manager"""
         self.config_path = config_path
         self.config = self._load_config()
     
     def _load_config(self) -> Dict[str, Any]:
-        """加载配置文件"""
+        """Load configuration file"""
         try:
             with open(self.config_path, 'r', encoding='utf-8') as f:
                 return yaml.safe_load(f)
@@ -58,7 +58,7 @@ class TestConfiguration:
             return self._get_default_config()
     
     def _get_default_config(self) -> Dict[str, Any]:
-        """获取默认配置"""
+        """Get default configuration"""
         return {
             'test_environments': {
                 'development': {
@@ -85,30 +85,30 @@ class TestConfiguration:
         }
     
     def get_environment_config(self, env_name: str) -> Dict[str, Any]:
-        """获取环境配置"""
+        """Get environment configuration"""
         return self.config.get('test_environments', {}).get(env_name, {})
     
     def get_test_config(self, test_category: str) -> Dict[str, Any]:
-        """获取测试配置"""
+        """Get test configuration"""
         return self.config.get('test_cases', {}).get(test_category, {})
     
     def is_test_enabled(self, test_category: str) -> bool:
-        """检查测试是否启用"""
+        """Check whether a test is enabled"""
         return self.get_test_config(test_category).get('enabled', True)
 
 
 class TestMonitor:
-    """测试监控器"""
+    """Test monitor"""
     
     def __init__(self):
-        """初始化监控器"""
+        """Initialize monitor"""
         self.start_time = None
         self.metrics = {}
         self.monitoring_active = False
         self.monitor_thread = None
     
     def start_monitoring(self):
-        """开始监控"""
+        """Start monitoring"""
         self.start_time = time.time()
         self.monitoring_active = True
         self.monitor_thread = threading.Thread(target=self._monitor_loop)
@@ -117,35 +117,35 @@ class TestMonitor:
         logging.info("测试监控已启动")
     
     def stop_monitoring(self):
-        """停止监控"""
+        """Stop monitoring"""
         self.monitoring_active = False
         if self.monitor_thread:
             self.monitor_thread.join(timeout=5)
         logging.info("测试监控已停止")
     
     def _monitor_loop(self):
-        """监控循环"""
+        """Monitoring loop"""
         while self.monitoring_active:
             try:
                 # 收集系统指标
                 self._collect_system_metrics()
-                time.sleep(5)  # 每5秒收集一次指标
+                time.sleep(5)  # Collect metrics every 5 seconds
             except Exception as e:
                 logging.error(f"监控错误: {e}")
     
     def _collect_system_metrics(self):
-        """收集系统指标"""
+        """Collect system metrics"""
         try:
             import psutil
             
-            # CPU 使用率
+            # CPU usage
             cpu_percent = psutil.cpu_percent(interval=1)
             
-            # 内存使用率
+            # Memory usage
             memory = psutil.virtual_memory()
             memory_percent = memory.percent
             
-            # 磁盘 I/O
+            # Disk I/O
             disk_io = psutil.disk_io_counters()
             
             timestamp = time.time()
@@ -157,28 +157,28 @@ class TestMonitor:
             }
             
         except ImportError:
-            # psutil 未安装，跳过系统监控
+            # psutil not installed, skip system monitoring
             pass
         except Exception as e:
             logging.error(f"收集系统指标失败: {e}")
 
 
 class TestReporter:
-    """测试报告生成器"""
+    """Test report generator"""
     
     def __init__(self, config: TestConfiguration):
-        """初始化报告生成器"""
+        """Initialize report generator"""
         self.config = config
         self.results = []
         self.start_time = None
         self.end_time = None
     
     def add_result(self, result: TestResult):
-        """添加测试结果"""
+        """Add test result"""
         self.results.append(result)
     
     def generate_reports(self):
-        """生成所有格式的报告"""
+        """Generate reports in all formats"""
         output_dir = Path(self.config.config.get('reporting', {}).get('output_directory', 'test_results'))
         output_dir.mkdir(exist_ok=True)
         
@@ -199,7 +199,7 @@ class TestReporter:
             self._generate_xml_report(xml_path)
     
     def _generate_html_report(self, output_path: Path):
-        """生成 HTML 报告"""
+        """Generate HTML report"""
         # 计算统计信息
         total_tests = len(self.results)
         passed_tests = sum(1 for r in self.results if r.status == 'PASSED')
@@ -281,7 +281,7 @@ class TestReporter:
         logging.info(f"HTML 报告已生成: {output_path}")
     
     def _generate_test_results_html(self) -> str:
-        """生成测试结果的 HTML"""
+        """Generate HTML for test results"""
         # 按类别分组测试结果
         categories = {}
         for result in self.results:
@@ -316,7 +316,7 @@ class TestReporter:
         return ''.join(html_parts)
     
     def _generate_json_report(self, output_path: Path):
-        """生成 JSON 报告"""
+        """Generate JSON report"""
         report_data = {
             'timestamp': datetime.now().isoformat(),
             'summary': {
@@ -343,10 +343,10 @@ class TestReporter:
         logging.info(f"JSON 报告已生成: {output_path}")
     
     def _generate_xml_report(self, output_path: Path):
-        """生成 XML 报告（JUnit 格式）"""
+        """Generate XML report (JUnit format)"""
         import xml.etree.ElementTree as ET
         
-        # 创建根元素
+        # Create root element
         testsuites = ET.Element('testsuites')
         testsuite = ET.SubElement(testsuites, 'testsuite')
         testsuite.set('name', 'TRIAXUS Database Tests')
@@ -354,7 +354,7 @@ class TestReporter:
         testsuite.set('failures', str(sum(1 for r in self.results if r.status == 'FAILED')))
         testsuite.set('time', str(sum(r.duration for r in self.results)))
         
-        # 添加测试用例
+        # Add test cases
         for result in self.results:
             testcase = ET.SubElement(testsuite, 'testcase')
             testcase.set('name', result.name)
@@ -373,22 +373,22 @@ class TestReporter:
 
 
 class AdvancedDatabaseTestRunner:
-    """高级数据库测试执行器"""
+    """Advanced database test runner"""
     
     def __init__(self, config_path: str = "tests/database_test_config.yaml"):
-        """初始化测试执行器"""
+        """Initialize test runner"""
         self.config = TestConfiguration(config_path)
         self.monitor = TestMonitor()
         self.reporter = TestReporter(self.config)
         self.setup_logging()
     
     def setup_logging(self):
-        """设置日志"""
+        """Configure logging"""
         log_config = self.config.config.get('logging', {})
         log_level = getattr(logging, log_config.get('level', 'INFO'))
         log_format = log_config.get('format', '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         
-        # 创建日志目录
+        # Create log directory
         log_file = log_config.get('file', 'test_logs/database_tests.log')
         log_dir = Path(log_file).parent
         log_dir.mkdir(exist_ok=True)
@@ -404,18 +404,18 @@ class AdvancedDatabaseTestRunner:
         )
     
     def run_tests(self, environment: str = 'development', categories: List[str] = None):
-        """运行测试"""
+        """Run tests"""
         logging.info(f"开始运行数据库测试 - 环境: {environment}")
         
-        # 设置环境变量
+        # Set environment variables
         self._setup_environment(environment)
         
-        # 开始监控
+        # Start monitoring
         if self.config.config.get('monitoring', {}).get('enabled', False):
             self.monitor.start_monitoring()
         
         try:
-            # 运行测试类别
+            # Run test categories
             if categories is None:
                 categories = ['connectivity', 'schema', 'mapping', 'operations']
             
@@ -426,17 +426,17 @@ class AdvancedDatabaseTestRunner:
                     logging.info(f"跳过已禁用的测试类别: {category}")
             
         finally:
-            # 停止监控
+            # Stop monitoring
             if self.config.config.get('monitoring', {}).get('enabled', False):
                 self.monitor.stop_monitoring()
             
-            # 生成报告
+            # Generate reports
             self.reporter.generate_reports()
         
         logging.info("数据库测试完成")
     
     def _setup_environment(self, environment: str):
-        """设置测试环境"""
+        """Set up test environment"""
         env_config = self.config.get_environment_config(environment)
         if env_config:
             os.environ['DATABASE_URL'] = env_config.get('database_url', '')

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-数据库测试实用工具
-提供数据库测试中常用的工具函数和类
+Database testing utilities
+Provides commonly used utility functions and classes for database tests
 """
 
 import os
@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
 
-# 添加项目根目录到路径
+# Add project root to sys.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from triaxus.database.connection_manager import DatabaseConnectionManager
@@ -24,33 +24,33 @@ from triaxus.database.models import OceanographicData, DataSource
 
 
 class DatabaseTestHelper:
-    """数据库测试辅助类"""
+    """Database test helper class"""
     
     def __init__(self):
-        """初始化测试辅助类"""
+        """Initialize test helper"""
         self.connection_manager = DatabaseConnectionManager()
         self.logger = logging.getLogger(__name__)
     
     def ensure_connection(self) -> bool:
-        """确保数据库连接"""
+        """Ensure database connection"""
         if not self.connection_manager.is_connected():
             return self.connection_manager.connect()
         return True
     
     def clean_test_data(self) -> bool:
-        """清理测试数据"""
+        """Clean test data"""
         try:
             if not self.ensure_connection():
                 return False
             
             with self.connection_manager.get_session() as session:
-                # 清理海洋数据
+                # Clean oceanographic data
                 oceanographic_count = session.query(OceanographicData).count()
                 if oceanographic_count > 0:
                     session.query(OceanographicData).delete()
                     self.logger.info(f"清理了 {oceanographic_count} 条海洋数据记录")
                 
-                # 清理数据源
+                # Clean data sources
                 sources_count = session.query(DataSource).count()
                 if sources_count > 0:
                     session.query(DataSource).delete()
@@ -65,7 +65,7 @@ class DatabaseTestHelper:
             return False
     
     def get_table_count(self, table_name: str) -> int:
-        """获取表中的记录数"""
+        """Get record count from a table"""
         try:
             if not self.ensure_connection():
                 return -1
@@ -76,7 +76,7 @@ class DatabaseTestHelper:
                 elif table_name == 'data_sources':
                     return session.query(DataSource).count()
                 else:
-                    # 使用原生 SQL 查询
+                    # Use raw SQL query
                     from sqlalchemy import text
                     result = session.execute(text(f"SELECT COUNT(*) FROM {table_name}"))
                     return result.scalar()
@@ -86,7 +86,7 @@ class DatabaseTestHelper:
             return -1
     
     def verify_data_integrity(self, sample_data: pd.DataFrame) -> Dict[str, Any]:
-        """验证数据完整性"""
+        """Validate data integrity"""
         integrity_results = {
             'total_records': len(sample_data),
             'null_values': {},
@@ -94,13 +94,13 @@ class DatabaseTestHelper:
             'data_quality_issues': []
         }
         
-        # 检查空值
+        # Check null values
         for column in sample_data.columns:
             null_count = sample_data[column].isnull().sum()
             if null_count > 0:
                 integrity_results['null_values'][column] = null_count
         
-        # 检查约束违反
+        # Check constraint violations
         if 'depth' in sample_data.columns:
             negative_depths = (sample_data['depth'] < 0).sum()
             if negative_depths > 0:
@@ -120,14 +120,14 @@ class DatabaseTestHelper:
     
     @contextmanager
     def temporary_data(self, data: pd.DataFrame):
-        """临时数据上下文管理器"""
+        """Temporary data context manager"""
         from triaxus.database.mappers import DataMapper
         
         mapper = DataMapper()
         models = mapper.dataframe_to_models(data, "temp_test_data.csv")
         
         try:
-            # 插入临时数据
+            # Insert temporary data
             if self.ensure_connection():
                 with self.connection_manager.get_session() as session:
                     session.add_all(models)
@@ -136,7 +136,7 @@ class DatabaseTestHelper:
             yield models
         
         finally:
-            # 清理临时数据
+            # Clean up temporary data
             try:
                 if self.ensure_connection():
                     with self.connection_manager.get_session() as session:
@@ -148,17 +148,17 @@ class DatabaseTestHelper:
 
 
 class PerformanceMonitor:
-    """性能监控器"""
+    """Performance monitor"""
     
     def __init__(self):
-        """初始化性能监控器"""
+        """Initialize performance monitor"""
         self.metrics = {}
         self.start_time = None
         self.monitoring = False
         self.monitor_thread = None
     
     def start_monitoring(self, interval: float = 1.0):
-        """开始性能监控"""
+        """Start performance monitoring"""
         self.start_time = time.time()
         self.monitoring = True
         self.monitor_thread = threading.Thread(target=self._monitor_loop, args=(interval,))
@@ -166,7 +166,7 @@ class PerformanceMonitor:
         self.monitor_thread.start()
     
     def stop_monitoring(self) -> Dict[str, Any]:
-        """停止性能监控并返回结果"""
+        """Stop performance monitoring and return results"""
         self.monitoring = False
         if self.monitor_thread:
             self.monitor_thread.join(timeout=5)
@@ -174,12 +174,12 @@ class PerformanceMonitor:
         return self._calculate_summary()
     
     def _monitor_loop(self, interval: float):
-        """监控循环"""
+        """Monitoring loop"""
         while self.monitoring:
             try:
                 timestamp = time.time() - self.start_time
                 
-                # 收集系统指标
+                # Collect system metrics
                 cpu_percent = psutil.cpu_percent(interval=0.1)
                 memory = psutil.virtual_memory()
                 disk_io = psutil.disk_io_counters()
@@ -202,11 +202,11 @@ class PerformanceMonitor:
                 break
     
     def _calculate_summary(self) -> Dict[str, Any]:
-        """计算性能摘要"""
+        """Compute performance summary"""
         if not self.metrics:
             return {}
         
-        # 转换为 DataFrame 便于计算
+        # Convert to DataFrame for easier computation
         df = pd.DataFrame.from_dict(self.metrics, orient='index')
         
         summary = {
@@ -236,21 +236,21 @@ class PerformanceMonitor:
 
 
 class BenchmarkTimer:
-    """基准测试计时器"""
+    """Benchmark timer"""
     
     def __init__(self, name: str = "Benchmark"):
-        """初始化计时器"""
+        """Initialize timer"""
         self.name = name
         self.start_time = None
         self.end_time = None
         self.measurements = []
     
     def start(self):
-        """开始计时"""
+        """Start timing"""
         self.start_time = time.perf_counter()
     
     def stop(self) -> float:
-        """停止计时并返回耗时"""
+        """Stop timing and return elapsed time"""
         if self.start_time is None:
             raise ValueError("计时器未启动")
         
@@ -260,12 +260,12 @@ class BenchmarkTimer:
         return duration
     
     def reset(self):
-        """重置计时器"""
+        """Reset timer"""
         self.start_time = None
         self.end_time = None
     
     def get_statistics(self) -> Dict[str, float]:
-        """获取统计信息"""
+        """Get statistics"""
         if not self.measurements:
             return {}
         
@@ -284,7 +284,7 @@ class BenchmarkTimer:
     
     @contextmanager
     def measure(self):
-        """计时上下文管理器"""
+        """Timing context manager"""
         self.start()
         try:
             yield self
@@ -293,11 +293,11 @@ class BenchmarkTimer:
 
 
 class TestDataValidator:
-    """测试数据验证器"""
+    """Test data validator"""
     
     @staticmethod
     def validate_oceanographic_data(data: pd.DataFrame) -> Dict[str, Any]:
-        """验证海洋数据"""
+        """Validate oceanographic data"""
         validation_results = {
             'valid': True,
             'errors': [],
@@ -307,13 +307,13 @@ class TestDataValidator:
         
         required_columns = ['time', 'depth', 'latitude', 'longitude']
         
-        # 检查必需列
+        # Check required columns
         missing_columns = [col for col in required_columns if col not in data.columns]
         if missing_columns:
             validation_results['valid'] = False
             validation_results['errors'].append(f"缺少必需列: {missing_columns}")
         
-        # 检查数据范围
+        # Check data ranges
         if 'depth' in data.columns:
             negative_depths = data[data['depth'] < 0]
             if not negative_depths.empty:
@@ -332,13 +332,13 @@ class TestDataValidator:
                 validation_results['valid'] = False
                 validation_results['errors'].append(f"发现 {len(invalid_lon)} 个无效经度值")
         
-        # 检查数据质量
+        # Check data quality
         null_counts = data.isnull().sum()
         high_null_columns = null_counts[null_counts > len(data) * 0.5]
         if not high_null_columns.empty:
             validation_results['warnings'].append(f"以下列有超过50%的空值: {high_null_columns.index.tolist()}")
         
-        # 计算统计信息
+        # Compute statistics
         validation_results['statistics'] = {
             'total_records': len(data),
             'null_values': null_counts.to_dict(),
@@ -349,7 +349,7 @@ class TestDataValidator:
     
     @staticmethod
     def validate_test_results(results: Dict[str, Any]) -> bool:
-        """验证测试结果格式"""
+        """Validate test result format"""
         required_fields = ['status']
         
         for test_name, result in results.items():
@@ -367,14 +367,14 @@ class TestDataValidator:
 
 
 class DatabaseConnectionTester:
-    """数据库连接测试器"""
+    """Database connection tester"""
     
     def __init__(self):
-        """初始化连接测试器"""
+        """Initialize connection tester"""
         self.connection_manager = DatabaseConnectionManager()
     
     def test_basic_connectivity(self) -> Dict[str, Any]:
-        """测试基础连接"""
+        """Test basic connectivity"""
         try:
             success = self.connection_manager.connect()
             return {
@@ -390,18 +390,18 @@ class DatabaseConnectionTester:
             }
     
     def test_connection_pool(self, pool_size: int = 5) -> Dict[str, Any]:
-        """测试连接池"""
+        """Test connection pool"""
         try:
             if not self.connection_manager.is_connected():
                 self.connection_manager.connect()
             
-            # 创建多个会话测试连接池
+            # Create multiple sessions to test connection pool
             sessions = []
             for i in range(pool_size):
                 session = self.connection_manager.session_factory()
                 sessions.append(session)
             
-            # 关闭所有会话
+            # Close all sessions
             for session in sessions:
                 session.close()
             
@@ -418,24 +418,24 @@ class DatabaseConnectionTester:
             }
     
     def test_transaction_handling(self) -> Dict[str, Any]:
-        """测试事务处理"""
+        """Test transaction handling"""
         try:
             if not self.connection_manager.is_connected():
                 self.connection_manager.connect()
             
-            # 测试正常事务
+            # Test normal transaction
             with self.connection_manager.get_session() as session:
                 from sqlalchemy import text
                 result = session.execute(text("SELECT 1"))
                 assert result.scalar() == 1
             
-            # 测试事务回滚
+            # Test transaction rollback
             try:
                 with self.connection_manager.get_session() as session:
                     session.execute(text("SELECT 1"))
                     raise Exception("测试异常")
             except Exception:
-                pass  # 预期的异常
+                pass  # Expected exception
             
             return {
                 'status': 'PASSED',
@@ -451,7 +451,7 @@ class DatabaseConnectionTester:
 
 
 def measure_execution_time(func: Callable) -> Callable:
-    """装饰器：测量函数执行时间"""
+    """Decorator: measure function execution time"""
     def wrapper(*args, **kwargs):
         start_time = time.perf_counter()
         result = func(*args, **kwargs)
@@ -459,7 +459,7 @@ def measure_execution_time(func: Callable) -> Callable:
         
         execution_time = end_time - start_time
         
-        # 如果结果是字典，添加执行时间
+        # If the result is a dict, add execution time
         if isinstance(result, dict):
             result['execution_time'] = execution_time
         
@@ -469,7 +469,7 @@ def measure_execution_time(func: Callable) -> Callable:
 
 
 def retry_on_failure(max_retries: int = 3, delay: float = 1.0):
-    """装饰器：失败时重试"""
+    """Decorator: retry on failure"""
     def decorator(func: Callable) -> Callable:
         def wrapper(*args, **kwargs):
             last_exception = None
@@ -491,13 +491,13 @@ def retry_on_failure(max_retries: int = 3, delay: float = 1.0):
     return decorator
 
 
-# 便利函数
+# Helper functions
 def setup_test_environment():
-    """设置测试环境"""
-    # 设置环境变量
+    """Set up test environment"""
+    # Set environment variables
     os.environ['DB_ENABLED'] = 'true'
     
-    # 配置日志
+    # Configure logging
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -505,31 +505,31 @@ def setup_test_environment():
 
 
 def cleanup_test_environment():
-    """清理测试环境"""
+    """Clean up test environment"""
     helper = DatabaseTestHelper()
     return helper.clean_test_data()
 
 
 if __name__ == "__main__":
-    # 示例用法
+    # Example usage
     setup_test_environment()
     
-    # 测试数据库连接
+    # Test database connectivity
     conn_tester = DatabaseConnectionTester()
     result = conn_tester.test_basic_connectivity()
     print(f"连接测试结果: {result}")
     
-    # 性能监控示例
+    # Performance monitoring example
     monitor = PerformanceMonitor()
     monitor.start_monitoring()
     
-    # 模拟一些工作
+    # Simulate some work
     time.sleep(2)
     
     perf_summary = monitor.stop_monitoring()
     print(f"性能摘要: {perf_summary}")
     
-    # 基准测试示例
+    # Benchmark example
     timer = BenchmarkTimer("示例测试")
     with timer.measure():
         time.sleep(0.1)

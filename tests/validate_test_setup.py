@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-验证数据库测试设置
-检查所有测试文件和配置是否正确创建
+Validate database test setup
+Check that all test files and configurations are correctly created
 """
 
 import os
@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 def check_file_exists(file_path: str, description: str) -> bool:
-    """检查文件是否存在"""
+    """Check if a file exists"""
     if Path(file_path).exists():
         print(f"✅ {description}: {file_path}")
         return True
@@ -18,7 +18,7 @@ def check_file_exists(file_path: str, description: str) -> bool:
         return False
 
 def check_directory_exists(dir_path: str, description: str) -> bool:
-    """检查目录是否存在"""
+    """Check if a directory exists"""
     if Path(dir_path).is_dir():
         print(f"✅ {description}: {dir_path}")
         return True
@@ -27,7 +27,7 @@ def check_directory_exists(dir_path: str, description: str) -> bool:
         return False
 
 def validate_python_syntax(file_path: str) -> bool:
-    """验证 Python 文件语法"""
+    """Validate Python file syntax"""
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             compile(f.read(), file_path, 'exec')
@@ -40,13 +40,13 @@ def validate_python_syntax(file_path: str) -> bool:
         return False
 
 def main():
-    """主验证函数"""
+    """Main validation function"""
     print("TRIAXUS 数据库测试设置验证")
     print("=" * 50)
     
     all_checks_passed = True
     
-    # 检查主要文档文件
+    # Check main documentation files
     print("\n📋 检查文档文件:")
     doc_files = [
         ("tests/DATABASE_TESTING_PLAN.md", "数据库测试方案文档"),
@@ -58,7 +58,7 @@ def main():
         if not check_file_exists(file_path, description):
             all_checks_passed = False
     
-    # 检查主要 Python 脚本
+    # Check main Python scripts
     print("\n🐍 检查 Python 脚本:")
     python_files = [
         ("tests/run_database_tests.py", "快速测试执行脚本"),
@@ -74,7 +74,7 @@ def main():
         else:
             all_checks_passed = False
     
-    # 检查目录结构
+    # Check directory structure
     print("\n📁 检查目录结构:")
     directories = [
         ("tests/fixtures", "测试数据目录"),
@@ -86,7 +86,7 @@ def main():
         if not check_directory_exists(dir_path, description):
             all_checks_passed = False
     
-    # 检查现有测试文件
+    # Check existing test files
     print("\n🧪 检查现有测试文件:")
     existing_test_files = [
         ("tests/test_database.py", "原有数据库测试脚本"),
@@ -100,7 +100,7 @@ def main():
         if not check_file_exists(file_path, description):
             print(f"⚠️  {description}: {file_path} (可能需要检查)")
     
-    # 检查文件权限
+    # Check file permissions
     print("\n🔐 检查文件权限:")
     executable_files = [
         "tests/run_database_tests.py",
@@ -115,7 +115,7 @@ def main():
                 print(f"⚠️  缺少执行权限: {file_path}")
                 print(f"   运行: chmod +x {file_path}")
     
-    # 检查导入依赖
+    # Check Python imports
     print("\n📦 检查 Python 导入:")
     try:
         import yaml
@@ -131,7 +131,7 @@ def main():
         print("❌ psutil 未安装 - 运行: pip install psutil")
         all_checks_passed = False
     
-    # 总结
+    # Summary
     print("\n" + "=" * 50)
     if all_checks_passed:
         print("🎉 所有检查通过！数据库测试设置完成。")
