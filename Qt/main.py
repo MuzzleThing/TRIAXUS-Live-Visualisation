@@ -121,9 +121,9 @@ class MainWindow(QMainWindow):
 
         # Determine which map to load based on internet connectivity
         if has_internet():
-            map_url = "http://localhost:8000/GPS-map/online/map.html"
+            map_url = "http://localhost:8000/GPS-map/online_proto/map.html"
         else:
-            map_url = "http://localhost:8000/GPS-map/offline/map.html"
+            map_url = "http://localhost:8000/GPS-map/offline_proto/map.html"
             
         map_view.load(QUrl(map_url))
         tab_widget.addTab(map_view, "Map")
