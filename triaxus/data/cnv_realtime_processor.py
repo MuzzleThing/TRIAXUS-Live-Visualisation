@@ -230,20 +230,9 @@ class CNVRealtimeProcessor:
                         state_file.write_text(json.dumps(list(seen)), encoding="utf-8")
                     except Exception:
                         pass
-                    
-                    # Update seen files (always track processed files)
-                    for p, key in candidate_files:
-                        if p in new_files:
-                            seen.add(key)
-                    
-                    # Save state
-                    try:
-                        state_file.write_text(json.dumps(list(seen)), encoding="utf-8")
-                    except Exception:
-                        pass
-                    
-                # Generate plots only when interval has passed (not on every file change)
-                if should_update_plots:
+                
+                # Generate plots when interval has passed OR when new files are processed
+                if should_update_plots or (plot_after and new_files):
                     try:
                         db = DatabaseDataSource()
                         if db.is_available():

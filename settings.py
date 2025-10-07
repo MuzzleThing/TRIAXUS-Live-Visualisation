@@ -10,6 +10,7 @@ settings = Dynaconf(
     settings_files=[
         "configs/default.yaml",
         "configs/custom.yaml",  # Optional custom overrides
+        "configs/realtime_test.yaml",  # Optional realtime testing overrides
         "configs/themes/*.yaml",  # Theme files
     ],
     # Environment variables prefix

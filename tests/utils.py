@@ -19,8 +19,11 @@ import numpy as np
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-# Import the new test data generator
-from .utils.test_data_generator import TestDataGenerator
+# Import the test data generator (flattened location)
+try:
+    from .test_data_generator import TestDataGenerator
+except Exception:
+    TestDataGenerator = None  # Some tests may not require it
 
 class TestDatabaseHelper:
     """Helper functions for database testing"""
