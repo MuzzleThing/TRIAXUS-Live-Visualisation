@@ -4,6 +4,8 @@ class SimpleTriaxusMap {
         this.trackLine = null;
         this.samplePoints = [];
         this.shipMarker = null;
+        this.pointsPanel = null;
+        this.isPointsPanelOpen = false;
         
         this.init();
     }
@@ -13,24 +15,19 @@ class SimpleTriaxusMap {
         this.addSampleData();
         this.addTrackLine();
         this.addShipMarker();
+        this.setupControlButtons();
     }
 
     initMap() {
-        // Initialize the map, default is Perth
         this.map = L.map('map', {
             center: [-32.0, 114.0], 
-            zoom: 8
+            zoom: 8,
+            zoomControl: true,
+            attributionControl: false
         });
-
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 18,
-            minZoom: 2,
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(this.map);
     }
 
     addSampleData() {
-        // Adding simulated sampling points for demonstration
         const sampleData = [
             { lat: -31.2, lng: 114.3, temp: 19.5, salinity: 35.4, depth: 45, time: '08:15:30' },
             { lat: -31.8, lng: 114.1, temp: 18.2, salinity: 35.2, depth: 85, time: '08:42:15' },
@@ -52,10 +49,8 @@ class SimpleTriaxusMap {
     }
 
     addSamplePoint(data, index) {
-        // Color determined by sea water temperature
         const color = this.getTemperatureColor(data.temp);
         
-        // Create point marker
         const marker = L.circleMarker([data.lat, data.lng], {
             radius: 8,
             fillColor: color,
@@ -65,7 +60,6 @@ class SimpleTriaxusMap {
             fillOpacity: 0.9
         });
 
-        // Pop-up box information
         const popupContent = `
             <div class="data-popup-title">TRIAXUS Point #${index + 1}</div>
             <div class="data-row">
@@ -95,7 +89,6 @@ class SimpleTriaxusMap {
             maxWidth: 250
         });
 
-        // Mouse events for popup
         marker.on('mouseover', function() {
             this.openPopup();
         });
@@ -111,7 +104,6 @@ class SimpleTriaxusMap {
     }
 
     addTrackLine() {
-        // Draw the track line connecting the sampling points
         const trackCoordinates = this.samplePoints.map(point => [point.data.lat, point.data.lng]);
         
         this.trackLine = L.polyline(trackCoordinates, {
@@ -125,12 +117,11 @@ class SimpleTriaxusMap {
     }
 
     addShipMarker() {
-        // ship marker for the latest sampling point
         const lastPoint = this.samplePoints[this.samplePoints.length - 1];
         if (!lastPoint) return;
 
         const shipIcon = L.divIcon({
-            html: '<div class="ship-marker">🚢</div>',
+            html: '<div class="ship-marker">⚓</div>',
             className: 'custom-ship-marker',
             iconSize: [32, 32],
             iconAnchor: [16, 16]
@@ -142,7 +133,7 @@ class SimpleTriaxusMap {
         }).addTo(this.map);
 
         this.shipMarker.bindPopup(`
-            <div class="data-popup-title">🚢 You are here!</div>
+            <div class="data-popup-title">⚓ You are here!</div>
             <div class="data-row">
                 <span class="data-label">Current location:</span>
                 <span class="data-value coordinate-value">${lastPoint.data.lat.toFixed(4)}°, ${lastPoint.data.lng.toFixed(4)}°</span>
@@ -156,6 +147,79 @@ class SimpleTriaxusMap {
                 <span class="data-value">${this.samplePoints.length} points</span>
             </div>
         `);
+    }
+
+    setupControlButtons() {
+        const locateBtn = document.getElementById('locate-btn');
+        locateBtn.addEventListener('click', () => {
+            this.locateToCurrentPosition();
+        });
+
+        const pointsBtn = document.getElementById('points-btn');
+        pointsBtn.addEventListener('click', () => {
+            this.togglePointsPanel();
+        });
+
+        this.pointsPanel = document.getElementById('points-panel');
+        this.renderPointsList();
+    }
+
+    locateToCurrentPosition() {
+        const lastPoint = this.samplePoints[this.samplePoints.length - 1];
+        if (lastPoint) {
+            this.map.setView([lastPoint.data.lat, lastPoint.data.lng], 12);
+            
+            setTimeout(() => {
+                this.shipMarker.openPopup();
+            }, 500);
+        }
+    }
+
+    togglePointsPanel() {
+        this.isPointsPanelOpen = !this.isPointsPanelOpen;
+        
+        if (this.isPointsPanelOpen) {
+            this.pointsPanel.classList.add('show');
+        } else {
+            this.pointsPanel.classList.remove('show');
+        }
+    }
+
+    renderPointsList() {
+        const pointsList = document.getElementById('points-list');
+        pointsList.innerHTML = '';
+
+        this.samplePoints.forEach((point, index) => {
+            const pointItem = document.createElement('div');
+            pointItem.className = 'point-item';
+            pointItem.innerHTML = `
+                <div class="point-number">Sample Point #${index + 1}</div>
+                <div class="point-info">
+                    Time: ${point.data.time} | 
+                    <span class="point-temp">${point.data.temp.toFixed(1)}°C</span>
+                </div>
+                <div class="point-info">
+                    Depth: ${point.data.depth}m | Salinity: ${point.data.salinity.toFixed(1)} PSU
+                </div>
+            `;
+
+            pointItem.addEventListener('click', () => {
+                this.locateToPoint(point, index);
+            });
+
+            pointsList.appendChild(pointItem);
+        });
+    }
+
+    locateToPoint(point, index) {
+        this.map.setView([point.data.lat, point.data.lng], 12);
+        
+        setTimeout(() => {
+            point.marker.openPopup();
+        }, 500);
+
+        this.isPointsPanelOpen = false;
+        this.pointsPanel.classList.remove('show');
     }
 
     getTemperatureColor(temp) {

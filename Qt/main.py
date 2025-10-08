@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QMainWindow, QApplication, QTabWidget, QWidget, QVBoxLayout
 from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtCore import QUrl
+from PySide6.QtCore import QProcess, QUrl
 import sys
 import os
 import socket
@@ -66,6 +66,41 @@ class EmbeddedServer:
             print("Server stopped")
 
 
+class DashboardView(QWidget):
+    def __init__(self, project_root, parent=None):
+        super().__init__(parent)
+
+        self._project_root = project_root
+        self._pipeline_process = QProcess(self)
+
+        # Configure the pipeline process to run without opening an external browser
+        script_path = os.path.join(self._project_root, "scripts", "start_realtime_pipeline.py")
+        self._pipeline_process.setProgram(sys.executable)
+        self._pipeline_process.setArguments([script_path, "--no-browser"])
+        self._pipeline_process.setWorkingDirectory(self._project_root)
+        self._pipeline_process.start()
+
+        # Set up the embedded web view for the dashboard
+        dashboard_view = QWebEngineView(self)
+        dashboard_view.setUrl(QUrl("http://localhost:8080"))
+
+        layout = QVBoxLayout(self)
+        layout.addWidget(dashboard_view)
+
+        self._dashboard_view = dashboard_view
+
+    def stop_pipeline(self):
+        if self._pipeline_process.state() != QProcess.NotRunning:
+            self._pipeline_process.terminate()
+            if not self._pipeline_process.waitForFinished(5000):
+                self._pipeline_process.kill()
+                self._pipeline_process.waitForFinished(2000)
+
+    def closeEvent(self, event):
+        self.stop_pipeline()
+        super().closeEvent(event)
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -86,9 +121,9 @@ class MainWindow(QMainWindow):
 
         # Determine which map to load based on internet connectivity
         if has_internet():
-            map_url = "http://localhost:8000/GPS-map/online/map.html"
+            map_url = "http://localhost:8000/GPS-map/online_proto/map.html"
         else:
-            map_url = "http://localhost:8000/GPS-map/offline/map.html"
+            map_url = "http://localhost:8000/GPS-map/offline_proto/map.html"
             
         map_view.load(QUrl(map_url))
         tab_widget.addTab(map_view, "Map")
@@ -97,11 +132,18 @@ class MainWindow(QMainWindow):
         plot_view = PlotView()
         tab_widget.addTab(plot_view, "Plot")
 
+        # Dashboard view
+        self.dashboard_view = DashboardView(project_root, self)
+        tab_widget.addTab(self.dashboard_view, "Dashboard")
+
         self.setCentralWidget(tab_widget)
     
     def closeEvent(self, event):
         """Handle application close event"""
         # Stop the embedded server when closing the app
+        if self.dashboard_view:
+            self.dashboard_view.stop_pipeline()
+
         if self.server:
             self.server.stop_server()
         super().closeEvent(event)

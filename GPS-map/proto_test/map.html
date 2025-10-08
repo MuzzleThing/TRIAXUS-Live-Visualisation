@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRIAXUS GPS map</title>
+    <link rel="stylesheet" href="leaflet.css" />
+    <link rel="stylesheet" href="map.css">
+</head>
+<body>
+    <div id="map"></div>
+    
+    <div class="custom-control-container">
+        <button id="locate-btn" class="control-button">Locate Current</button>
+        <button id="points-btn" class="control-button">Sample Points</button>
+    </div>
+    
+    <div id="points-panel" class="points-panel">
+        <div class="panel-title">Sample Points List</div>
+        <div id="points-list"></div>
+    </div>
+    
+    <script src="leaflet.js"></script>
+    <script src="map.js"></script>
+</body>
+</html>
