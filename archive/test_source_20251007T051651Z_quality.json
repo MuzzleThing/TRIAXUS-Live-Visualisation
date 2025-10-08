@@ -1,0 +1,117 @@
+{
+  "row_count": 10,
+  "duplicate_count": 0,
+  "duplicate_ratio": 0.0,
+  "warnings": [],
+  "errors": [],
+  "columns": {
+    "time": {
+      "name": "time",
+      "total": 10,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 1.7041104e+18,
+      "max_value": 1.7041428e+18,
+      "warnings": [],
+      "errors": []
+    },
+    "depth": {
+      "name": "depth",
+      "total": 10,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 0.0,
+      "max_value": 18.0,
+      "warnings": [],
+      "errors": []
+    },
+    "latitude": {
+      "name": "latitude",
+      "total": 10,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 45.0,
+      "max_value": 45.9,
+      "warnings": [],
+      "errors": []
+    },
+    "longitude": {
+      "name": "longitude",
+      "total": 10,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": -120.0,
+      "max_value": -119.1,
+      "warnings": [],
+      "errors": []
+    },
+    "tv290c": {
+      "name": "tv290c",
+      "total": 10,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 15.0,
+      "max_value": 15.9,
+      "warnings": [],
+      "errors": []
+    },
+    "sal00": {
+      "name": "sal00",
+      "total": 10,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 35.0,
+      "max_value": 35.09,
+      "warnings": [],
+      "errors": []
+    },
+    "sbeox0mm_l": {
+      "name": "sbeox0mm_l",
+      "total": 10,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 0.256,
+      "max_value": 0.2704,
+      "warnings": [],
+      "errors": []
+    },
+    "fleco_afl": {
+      "name": "fleco_afl",
+      "total": 10,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 0.5,
+      "max_value": 0.6799999999999999,
+      "warnings": [],
+      "errors": []
+    },
+    "ph": {
+      "name": "ph",
+      "total": 10,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 8.1,
+      "max_value": 8.19,
+      "warnings": [],
+      "errors": []
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "comprehensive_test.cnv",
+  "processing_date": "2025-10-07T15:09:56.848767",
+  "total_records": 10,
+  "row_count": 10,
+  "quality_summary": {
+    "warnings": [],
+    "errors": [],
+    "duplicate_ratio": 0.0
+  }
+}

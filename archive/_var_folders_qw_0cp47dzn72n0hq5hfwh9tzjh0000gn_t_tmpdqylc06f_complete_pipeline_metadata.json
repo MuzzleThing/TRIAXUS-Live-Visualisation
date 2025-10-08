@@ -1,0 +1,11 @@
+{
+  "source_file": "/var/folders/qw/0cp47dzn72n0hq5hfwh9tzjh0000gn/T/tmpdqylc06f/pipeline_test.cnv",
+  "processing_date": "2025-10-07T13:16:40.261908",
+  "total_records": 10,
+  "row_count": 10,
+  "quality_summary": {
+    "warnings": [],
+    "errors": [],
+    "duplicate_ratio": 0.0
+  }
+}

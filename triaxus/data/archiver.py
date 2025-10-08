@@ -72,7 +72,7 @@ class DataArchiver:
         if report is None:
             report = self.data_processor.run_quality_checks(processed)
 
-        archive_info = self._write_to_filesystem(processed, source_name, report, metadata)
+        archive_info = self._write_to_filesystem(processed, source_name, report, metadata, processing_config)
         database_result = self._store_in_database(processed, source_name, metadata)
 
         return {
@@ -83,6 +83,70 @@ class DataArchiver:
         }
 
     # ------------------------------------------------------------------
+    # Convenience methods for testing
+    # ------------------------------------------------------------------
+    def archive_to_csv(self, data: pd.DataFrame, output_file: str, compress: bool = False) -> Dict[str, Any]:
+        """Archive data to CSV file"""
+        # Temporarily override archive directory for this operation
+        original_dir = self.archive_dir
+        try:
+            output_path = Path(output_file)
+            self.archive_dir = output_path.parent
+            try:
+                self.archive_dir.mkdir(parents=True, exist_ok=True)
+            except (OSError, PermissionError) as e:
+                # If we can't create directory, raise appropriate error
+                raise ValueError(f"Cannot create output directory {self.archive_dir}: {e}")
+            
+            config = {"write_files": True, "file_format": "csv.gz" if compress else "csv", "include_timestamp": False}
+            result = self.archive(data, output_path.stem, processing_config=config)
+            return result
+        finally:
+            self.archive_dir = original_dir
+
+    def archive_quality_report(self, quality_report: Any, output_file: str) -> Dict[str, Any]:
+        """Archive quality report"""
+        # Temporarily override archive directory for this operation
+        original_dir = self.archive_dir
+        try:
+            output_path = Path(output_file)
+            self.archive_dir = output_path.parent
+            self.archive_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Create dummy data for quality report archiving
+            dummy_data = pd.DataFrame({"dummy": [1, 2, 3]})
+            config = {"write_files": True, "include_timestamp": False}
+            return self.archive(dummy_data, output_path.stem, processing_config=config, metadata={"quality_report": quality_report})
+        finally:
+            self.archive_dir = original_dir
+
+    def archive_metadata(self, metadata: Dict[str, Any], output_file: str) -> Dict[str, Any]:
+        """Archive metadata"""
+        # Temporarily override archive directory for this operation
+        original_dir = self.archive_dir
+        try:
+            output_path = Path(output_file)
+            self.archive_dir = output_path.parent
+            self.archive_dir.mkdir(parents=True, exist_ok=True)
+            
+            dummy_data = pd.DataFrame({"dummy": [1, 2, 3]})
+            config = {"write_files": True, "include_timestamp": False}
+            return self.archive(dummy_data, output_path.stem, processing_config=config, metadata=metadata)
+        finally:
+            self.archive_dir = original_dir
+
+    def archive_to_database(self, data: pd.DataFrame, source_name: str) -> Dict[str, Any]:
+        """Archive data to database only"""
+        config = {"write_files": False}
+        return self.archive(data, source_name, processing_config=config)
+
+    def archive_comprehensive(self, data: pd.DataFrame, source_name: str,
+                            quality_report: Any = None, metadata: Dict[str, Any] = None) -> Dict[str, Any]:
+        """Comprehensive archiving with all options"""
+        config = {"write_files": True, "include_timestamp": False}
+        return self.archive(data, source_name, processing_config=config, metadata=metadata)
+
+    # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
     def _write_to_filesystem(
@@ -91,11 +155,12 @@ class DataArchiver:
         source_name: str,
         report: Optional[QualityReport],
         metadata: Dict[str, Any],
+        processing_config: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Optional[str]]:
         if not self.archiving_config.get("write_files", True):
             return {}
 
-        base_name = self._build_base_name(source_name)
+        base_name = self._build_base_name(source_name, processing_config)
         file_format = str(self.archiving_config.get("file_format", "csv")).lower()
 
         if file_format != "csv":
@@ -204,9 +269,17 @@ class DataArchiver:
                 self._database_source = None
         return self._database_source
 
-    def _build_base_name(self, source_name: str) -> str:
+    def _build_base_name(self, source_name: str, processing_config: Optional[Dict[str, Any]] = None) -> str:
         sanitized = re.sub(r"[^A-Za-z0-9_-]+", "_", source_name.strip().lower()) or "dataset"
-        if self.archiving_config.get("include_timestamp", True):
+        
+        # Check both processing_config and archiving_config for include_timestamp
+        include_timestamp = True
+        if processing_config and "include_timestamp" in processing_config:
+            include_timestamp = processing_config["include_timestamp"]
+        elif "include_timestamp" in self.archiving_config:
+            include_timestamp = self.archiving_config["include_timestamp"]
+            
+        if include_timestamp:
             timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
             return f"{sanitized}_{timestamp}"
         return sanitized

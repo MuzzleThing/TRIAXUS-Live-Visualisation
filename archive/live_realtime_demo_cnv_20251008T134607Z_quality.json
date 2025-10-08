@@ -1,0 +1,229 @@
+{
+  "row_count": 246,
+  "duplicate_count": 0,
+  "duplicate_ratio": 0.0,
+  "warnings": [
+    "par: 5 potential anomalies (>4.0 z-score)"
+  ],
+  "errors": [],
+  "columns": {
+    "tv290c": {
+      "name": "tv290c",
+      "total": 246,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 16.9627,
+      "max_value": 17.0163,
+      "warnings": [],
+      "errors": []
+    },
+    "conductivity": {
+      "name": "conductivity",
+      "total": 246,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 4.541368,
+      "max_value": 4.545755,
+      "warnings": [],
+      "errors": []
+    },
+    "depth": {
+      "name": "depth",
+      "total": 246,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 144.496,
+      "max_value": 148.325,
+      "warnings": [],
+      "errors": []
+    },
+    "tv290c_2": {
+      "name": "tv290c_2",
+      "total": 246,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 16.9903,
+      "max_value": 17.0572,
+      "warnings": [],
+      "errors": []
+    },
+    "conductivity_2": {
+      "name": "conductivity_2",
+      "total": 246,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 4.541408,
+      "max_value": 4.546246,
+      "warnings": [],
+      "errors": []
+    },
+    "sbeox0mm_l": {
+      "name": "sbeox0mm_l",
+      "total": 246,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 6.62592,
+      "max_value": 6.807584,
+      "warnings": [],
+      "errors": []
+    },
+    "sbeox1mm_l": {
+      "name": "sbeox1mm_l",
+      "total": 246,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 6.485184,
+      "max_value": 6.656288,
+      "warnings": [],
+      "errors": []
+    },
+    "par": {
+      "name": "par",
+      "total": 246,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 5,
+      "min_value": 1e-12,
+      "max_value": 3.1798e-05,
+      "warnings": [
+        "5 potential anomalies (>4.0 z-score)"
+      ],
+      "errors": []
+    },
+    "cstar_tr0": {
+      "name": "cstar_tr0",
+      "total": 246,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 89.9556,
+      "max_value": 91.5694,
+      "warnings": [],
+      "errors": []
+    },
+    "sal00": {
+      "name": "sal00",
+      "total": 246,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 35.4625,
+      "max_value": 35.4844,
+      "warnings": [],
+      "errors": []
+    },
+    "sal11": {
+      "name": "sal11",
+      "total": 246,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 35.4402,
+      "max_value": 35.4649,
+      "warnings": [],
+      "errors": []
+    },
+    "scan": {
+      "name": "scan",
+      "total": 246,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 1.0,
+      "max_value": 246.0,
+      "warnings": [],
+      "errors": []
+    },
+    "time_elapsed": {
+      "name": "time_elapsed",
+      "total": 246,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 0.0,
+      "max_value": 245.0,
+      "warnings": [],
+      "errors": []
+    },
+    "pumps": {
+      "name": "pumps",
+      "total": 246,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 1.0,
+      "max_value": 1.0,
+      "warnings": [],
+      "errors": []
+    },
+    "latitude": {
+      "name": "latitude",
+      "total": 246,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": -33.87928,
+      "max_value": -33.86884,
+      "warnings": [],
+      "errors": []
+    },
+    "longitude": {
+      "name": "longitude",
+      "total": 246,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 151.19271,
+      "max_value": 151.20923,
+      "warnings": [],
+      "errors": []
+    },
+    "flag": {
+      "name": "flag",
+      "total": 246,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 0.0,
+      "max_value": 0.0,
+      "warnings": [],
+      "errors": []
+    },
+    "time": {
+      "name": "time",
+      "total": 246,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 1.759930922e+18,
+      "max_value": 1.759931167e+18,
+      "warnings": [],
+      "errors": []
+    }
+  }
+}

@@ -1,0 +1,105 @@
+{
+  "row_count": 10,
+  "duplicate_count": 0,
+  "duplicate_ratio": 0.0,
+  "warnings": [],
+  "errors": [],
+  "columns": {
+    "time_elapsed": {
+      "name": "time_elapsed",
+      "total": 10,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 0.0,
+      "max_value": 2.25,
+      "warnings": [],
+      "errors": []
+    },
+    "depsm": {
+      "name": "depsm",
+      "total": 10,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 1.0,
+      "max_value": 10.0,
+      "warnings": [],
+      "errors": []
+    },
+    "tv290c": {
+      "name": "tv290c",
+      "total": 10,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 14.2346,
+      "max_value": 15.2345,
+      "warnings": [],
+      "errors": []
+    },
+    "conductivity": {
+      "name": "conductivity",
+      "total": 10,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 3.45678,
+      "max_value": 3.45678,
+      "warnings": [],
+      "errors": []
+    },
+    "sal00": {
+      "name": "sal00",
+      "total": 10,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 34.9019,
+      "max_value": 35.1234,
+      "warnings": [],
+      "errors": []
+    },
+    "sbeox0mm_l": {
+      "name": "sbeox0mm_l",
+      "total": 10,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 0.0080915456,
+      "max_value": 0.008318361600000001,
+      "warnings": [],
+      "errors": []
+    },
+    "fleco_afl": {
+      "name": "fleco_afl",
+      "total": 10,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 0.5432,
+      "max_value": 0.5432,
+      "warnings": [],
+      "errors": []
+    },
+    "time": {
+      "name": "time",
+      "total": 10,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 0.0,
+      "max_value": 2250000000.0,
+      "warnings": [],
+      "errors": []
+    }
+  }
+}

@@ -43,6 +43,8 @@ class CNVFileReader:
             'CStarTr0': 'cstar_tr0',     # Beam Transmission [%]
             'sal00': 'sal00',            # Salinity, Practical [PSU]
             'sal11': 'sal11',            # Salinity, Practical, 2 [PSU]
+            'fleco_afl': 'fleco_afl',    # Fluorescence [mg/m³]
+            'ph': 'ph',                  # pH
             'scan': 'scan',              # Scan Count
             'timeS': 'time_elapsed',        # Time, Elapsed [seconds] -> time_elapsed
             'pumps': 'pumps',            # Pump Status
