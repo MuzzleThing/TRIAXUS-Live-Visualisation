@@ -9,6 +9,7 @@
 let refreshInterval;
 let currentData = [];
 let mapZoomLevel = 18;
+let selectedTimezone = 'browser';
 
 /**
  * Initialize the dashboard when DOM is loaded
@@ -41,6 +42,18 @@ function setupEventListeners() {
             updateAllPlots();
         }
     });
+
+    // Timezone selector
+    const tzSelect = document.getElementById('timezoneSelect');
+    if (tzSelect) {
+        tzSelect.addEventListener('change', function() {
+            selectedTimezone = this.value;
+            if (currentData.length > 0) {
+                updateAllPlots();
+            }
+        });
+        selectedTimezone = tzSelect.value || 'browser';
+    }
 
     // Map zoom control
     document.getElementById('mapZoom').addEventListener('change', function() {
@@ -244,7 +257,7 @@ function getTimeFilteredData() {
     
     console.log(`Cutoff time for ${timeGranularity}: ${cutoffTimeUTC.toISOString()}`);
     
-    const filtered = currentData.filter(d => {
+    let filtered = currentData.filter(d => {
         const dataTime = new Date(d.time);
         const isInRange = dataTime >= cutoffTimeUTC;
         if (!isInRange && currentData.indexOf(d) < 5) { // Debug first few records
@@ -252,6 +265,7 @@ function getTimeFilteredData() {
         }
         return isInRange;
     });
+    // No future filtering - allow all data through
     
     console.log(`Filtered ${filtered.length} records from ${currentData.length} total`);
     return filtered;
@@ -260,15 +274,114 @@ function getTimeFilteredData() {
 /**
  * Determine data timezone from time string
  */
-function getDataTimezone(timeStr) {
-    if (timeStr.includes('+08:00')) {
-        return 'CST (UTC+8)';
-    } else if (timeStr.includes('+00:00') || timeStr.includes('Z')) {
-        return 'UTC';
-    } else if (timeStr.includes('-')) {
-        return 'Local';
+function getDisplayTimezoneLabel() {
+    // Build a friendly label for the chosen timezone
+    if (selectedTimezone && selectedTimezone !== 'browser') {
+        try {
+            const fmt = new Intl.DateTimeFormat('en-US', { timeZone: selectedTimezone, timeZoneName: 'shortOffset' });
+            const parts = fmt.formatToParts(new Date());
+            const tzPart = parts.find(p => p.type === 'timeZoneName');
+            const offset = tzPart ? tzPart.value.replace('GMT', 'UTC') : '';
+            return `${selectedTimezone} (${offset})`;
+        } catch (e) {
+            // Fallback if timezone not supported
+            return `${selectedTimezone}`;
+        }
     }
-    return 'UTC';
+    // Browser local
+    try {
+        const tzName = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Local';
+        const now = new Date();
+        // getTimezoneOffset returns minutes behind UTC; invert and format
+        const offsetMin = -now.getTimezoneOffset();
+        const sign = offsetMin >= 0 ? '+' : '-';
+        const absMin = Math.abs(offsetMin);
+        const hours = String(Math.floor(absMin / 60)).padStart(1, '0');
+        const mins = String(absMin % 60).padStart(2, '0');
+        return `${tzName} (UTC${sign}${hours}${mins === '00' ? '' : ':' + mins})`;
+    } catch (e) {
+        // Fallback label
+        const offsetMin = -new Date().getTimezoneOffset();
+        const sign = offsetMin >= 0 ? '+' : '-';
+        const hours = Math.floor(Math.abs(offsetMin) / 60);
+        return `Local (UTC${sign}${hours})`;
+    }
+}
+
+// Convert ISO time string to Date in desired timezone for plotting
+function getTimezoneOffsetMinutes(atDate, timeZone) {
+    // Compute the timezone's offset (minutes east of UTC positive) at the given instant
+    const dtf = new Intl.DateTimeFormat('en-US', {
+        timeZone,
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+    });
+    const parts = dtf.formatToParts(atDate).reduce((acc, p) => (acc[p.type] = p.value, acc), {});
+    const y = Number(parts.year), M = Number(parts.month), d = Number(parts.day);
+    const h = Number(parts.hour), m = Number(parts.minute), s = Number(parts.second);
+    // UTC timestamp for the wall-clock values in the target time zone
+    const utcFromWall = Date.UTC(y, M - 1, d, h, m, s);
+    // Offset minutes = (wall as UTC) - actual UTC instant
+    return Math.round((utcFromWall - atDate.getTime()) / 60000);
+}
+
+function toDisplayDate(isoStr) {
+    const utc = new Date(isoStr); // absolute instant (API is UTC Z)
+    if (!selectedTimezone || selectedTimezone === 'UTC') {
+        // For UTC mode, we need to show the actual UTC time
+        // API sends "2025-10-08T13:47:07Z" but browser shows it as 21:47 (UTC+8)
+        // We need to create a date that displays as 13:47
+        
+        // Method: Create a date that represents the UTC time as if it were local time
+        // Get UTC components from the original UTC time
+        const utcYear = utc.getUTCFullYear();
+        const utcMonth = utc.getUTCMonth();
+        const utcDate = utc.getUTCDate();
+        const utcHours = utc.getUTCHours();
+        const utcMinutes = utc.getUTCMinutes();
+        const utcSeconds = utc.getUTCSeconds();
+        
+        // Create a new Date object using UTC components as local time
+        // This tricks the browser into displaying the UTC time as local time
+        const adjustedDate = new Date(utcYear, utcMonth, utcDate, utcHours, utcMinutes, utcSeconds);
+        
+        // Debug log
+        console.log(`UTC conversion: ${isoStr} -> ${adjustedDate.toLocaleString()}`);
+        
+        return adjustedDate;
+    }
+    if (selectedTimezone === 'browser') {
+        // For browser local, let the browser handle the conversion
+        return utc;
+    }
+    
+    try {
+        // Use Intl.DateTimeFormat to convert to target timezone
+        const formatter = new Intl.DateTimeFormat('en-CA', {
+            timeZone: selectedTimezone,
+            year: 'numeric',
+            month: '2-digit', 
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
+        
+        const parts = formatter.formatToParts(utc);
+        const year = parts.find(p => p.type === 'year').value;
+        const month = parts.find(p => p.type === 'month').value;
+        const day = parts.find(p => p.type === 'day').value;
+        const hour = parts.find(p => p.type === 'hour').value;
+        const minute = parts.find(p => p.type === 'minute').value;
+        const second = parts.find(p => p.type === 'second').value;
+        
+        // Create new Date object with timezone-adjusted values
+        return new Date(year, month - 1, day, hour, minute, second);
+    } catch (e) {
+        console.warn(`Timezone conversion failed for ${selectedTimezone}:`, e);
+        return utc;
+    }
 }
 
 /**
@@ -276,7 +389,10 @@ function getDataTimezone(timeStr) {
  */
 function updateTimeSeriesPlots() {
     const filteredData = getTimeFilteredData();
-    const times = filteredData.map(d => new Date(d.time)).filter(t => !isNaN(t));
+    const times = filteredData.map(d => {
+        // Always use toDisplayDate for consistent timezone handling
+        return toDisplayDate(d.time);
+    }).filter(t => !isNaN(t));
     const temps = filteredData.map(d => d.tv290c).filter(v => v !== null);
     const salinities = filteredData.map(d => d.sal00).filter(v => v !== null);
     const oxygens = filteredData.map(d => d.sbeox0mm_l).filter(v => v !== null);
@@ -308,13 +424,12 @@ function updateTimeSeriesPlots() {
         oxygens.splice(0, oxygens.length, ...sampledOxygens);
     }
 
-    // Determine data timezone and create title
-    const dataTimezone = filteredData.length > 0 && filteredData[0].time ? 
-                        getDataTimezone(filteredData[0].time) : 'UTC';
+    // Determine display timezone from browser (we plot in local time)
+    const displayTz = selectedTimezone === 'UTC' ? 'UTC' : getDisplayTimezoneLabel();
     const timeGranularity = document.getElementById('timeGranularity').value;
     const timeRangeTitle = timeGranularity === 'all' ? 
-                          `All Data (${dataTimezone})` : 
-                          `Last ${timeGranularity.toUpperCase()} (${dataTimezone})`;
+                          `All Data (${displayTz})` : 
+                          `Last ${timeGranularity.toUpperCase()} (${displayTz})`;
     
     // Temperature plot
     Plotly.react('temp-plot', [{
@@ -328,7 +443,7 @@ function updateTimeSeriesPlots() {
     }], {
         title: `Temperature vs Time (${timeRangeTitle})`,
         xaxis: {
-            title: `Time (${dataTimezone})`,
+            title: `Time (${displayTz})`,
             type: 'date',
             tickformat: timeGranularity === '5m' || timeGranularity === '15m' || timeGranularity === '30m' || timeGranularity === '1h' || timeGranularity === '6h' ? '%H:%M:%S' : 
                        timeGranularity === '12h' || timeGranularity === '24h' ? '%m/%d %H:%M' : 
@@ -350,7 +465,7 @@ function updateTimeSeriesPlots() {
     }], {
         title: `Salinity vs Time (${timeRangeTitle})`,
         xaxis: {
-            title: `Time (${dataTimezone})`,
+            title: `Time (${displayTz})`,
             type: 'date',
             tickformat: timeGranularity === '5m' || timeGranularity === '15m' || timeGranularity === '30m' || timeGranularity === '1h' || timeGranularity === '6h' ? '%H:%M:%S' : 
                        timeGranularity === '12h' || timeGranularity === '24h' ? '%m/%d %H:%M' : 
@@ -372,7 +487,7 @@ function updateTimeSeriesPlots() {
     }], {
         title: `Oxygen vs Time (${timeRangeTitle})`,
         xaxis: {
-            title: `Time (${dataTimezone})`,
+            title: `Time (${displayTz})`,
             type: 'date',
             tickformat: timeGranularity === '5m' || timeGranularity === '15m' || timeGranularity === '30m' || timeGranularity === '1h' || timeGranularity === '6h' ? '%H:%M:%S' : 
                        timeGranularity === '12h' || timeGranularity === '24h' ? '%m/%d %H:%M' : 
@@ -391,13 +506,12 @@ function updateProfilePlot() {
     const depths = filteredData.map(d => d.depth).filter(v => v !== null);
     const temps = filteredData.map(d => d.tv290c).filter(v => v !== null);
     
-    // Determine data timezone and create title
-    const dataTimezone = filteredData.length > 0 && filteredData[0].time ? 
-                        getDataTimezone(filteredData[0].time) : 'UTC';
+    // Determine display timezone from browser (we plot in local time)
+    const displayTz = selectedTimezone === 'UTC' ? 'UTC' : getDisplayTimezoneLabel();
     const timeGranularity = document.getElementById('timeGranularity').value;
     const timeRangeTitle = timeGranularity === 'all' ? 
-                          `All Data (${dataTimezone})` : 
-                          `Last ${timeGranularity.toUpperCase()} (${dataTimezone})`;
+                          `All Data (${displayTz})` : 
+                          `Last ${timeGranularity.toUpperCase()} (${displayTz})`;
 
     Plotly.react('profile-plot', [{
         x: temps,
@@ -499,8 +613,7 @@ function updateMapPlot() {
         };
 
         // Determine data timezone and create title
-        const dataTimezone = filteredData.length > 0 && filteredData[0].time ? 
-                            getDataTimezone(filteredData[0].time) : 'UTC';
+        const dataTimezone = getDisplayTimezoneLabel();
         const timeGranularity = document.getElementById('timeGranularity').value;
         const timeRangeTitle = timeGranularity === 'all' ? 
                               `All Data (${dataTimezone})` : 

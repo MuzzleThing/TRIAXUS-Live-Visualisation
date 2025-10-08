@@ -9,7 +9,7 @@ import time
 import sys
 import os
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
@@ -19,6 +19,7 @@ sys.path.insert(0, str(project_root))
 
 from triaxus.data.database_source import DatabaseDataSource
 from triaxus.core.config.manager import ConfigManager
+import pandas as pd
 
 class RealtimeAPIHandler(BaseHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
@@ -47,6 +48,10 @@ class RealtimeAPIHandler(BaseHTTPRequestHandler):
             self.serve_static_file('dashboard.css', 'text/css')
         elif path == '/dashboard.js':
             self.serve_static_file('dashboard.js', 'application/javascript')
+        elif path.startswith('/js/'):
+            # Handle JS module files
+            filename = path[4:]  # Remove '/js/' prefix
+            self.serve_static_file(f'js/{filename}', 'application/javascript')
         else:
             self.send_error(404, "Not Found")
     
@@ -59,23 +64,48 @@ class RealtimeAPIHandler(BaseHTTPRequestHandler):
             # Get latest data from database (only recent data for real-time display)
             data = self.db_source.load_data(limit=limit)
             
-            # Let frontend handle time filtering - return all data for flexibility
+            # Normalize all timestamps to UTC and filter by a sane window around now
             if not data.empty and 'time' in data.columns:
-                import pandas as pd
-                
-                # Convert time column to datetime if it's not already
-                data['time'] = pd.to_datetime(data['time'], format='ISO8601')
+                # Parse to datetime (utc=True ensures tz-aware UTC; naive treated as UTC)
+                data['time'] = pd.to_datetime(data['time'], utc=True, errors='coerce')
+
+                # Optional windowing: only return data within [now - window_minutes, now + max_future_minutes]
+                # Defaults: 24h back, 5 minutes ahead
+                try:
+                    window_minutes = int(query_params.get('window_minutes', ['1440'])[0])
+                except Exception:
+                    window_minutes = 1440
+                try:
+                    max_future_minutes = int(query_params.get('max_future_minutes', ['5'])[0])
+                except Exception:
+                    max_future_minutes = 5
+
+                now_utc = datetime.now(timezone.utc)
+                lower_bound = now_utc - pd.Timedelta(minutes=window_minutes)
+                upper_bound = now_utc + pd.Timedelta(minutes=max_future_minutes)
+
+                data = data[(data['time'] >= lower_bound) & (data['time'] <= upper_bound)]
+
+                # Sort newest-first before limiting
+                data = data.sort_values('time', ascending=False)
             
             # Convert to JSON-serializable format
             records = []
-            for _, row in data.iterrows():
+            for _, row in data.head(limit).iterrows():
                 # Handle time conversion properly
                 time_val = row['time']
                 if pd.notna(time_val):
-                    if hasattr(time_val, 'isoformat'):
-                        time_str = time_val.isoformat()
-                    else:
-                        time_str = str(time_val)
+                    # time_val may be a pandas Timestamp, numpy datetime64, or str
+                    try:
+                        # Convert via pandas to ensure UTC and consistent type
+                        ts = pd.to_datetime(time_val, utc=True, errors='coerce')
+                        if ts is not pd.NaT:
+                            # Always emit RFC3339 Z format
+                            time_str = ts.strftime('%Y-%m-%dT%H:%M:%SZ')
+                        else:
+                            time_str = None
+                    except Exception:
+                        time_str = None
                 else:
                     time_str = None
                 
@@ -87,6 +117,8 @@ class RealtimeAPIHandler(BaseHTTPRequestHandler):
                     'tv290c': float(row['tv290c']) if pd.notna(row['tv290c']) else None,
                     'sal00': float(row['sal00']) if pd.notna(row['sal00']) else None,
                     'sbeox0mm_l': float(row['sbeox0mm_l']) if pd.notna(row['sbeox0mm_l']) else None,
+                    'fleco_afl': float(row['fleco_afl']) if pd.notna(row['fleco_afl']) else None,
+                    'ph': float(row['ph']) if pd.notna(row['ph']) else None,
                 }
                 records.append(record)
             
@@ -94,7 +126,7 @@ class RealtimeAPIHandler(BaseHTTPRequestHandler):
                 'success': True,
                 'data': records,
                 'count': len(records),
-                'timestamp': datetime.now().isoformat()
+                'timestamp': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
             }
             
             self.send_json_response(response)
@@ -116,7 +148,7 @@ class RealtimeAPIHandler(BaseHTTPRequestHandler):
                 'success': True,
                 'database_connected': True,
                 'latest_records': len(data),
-                'timestamp': datetime.now().isoformat()
+                'timestamp': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
             }
             self.send_json_response(status)
         except Exception as e:
@@ -124,7 +156,7 @@ class RealtimeAPIHandler(BaseHTTPRequestHandler):
                 'success': False,
                 'database_connected': False,
                 'error': str(e),
-                'timestamp': datetime.now().isoformat()
+                'timestamp': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
             }
             self.send_json_response(status, status=500)
     

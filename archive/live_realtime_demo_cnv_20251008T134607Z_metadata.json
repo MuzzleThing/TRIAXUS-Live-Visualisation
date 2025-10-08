@@ -1,0 +1,19 @@
+{
+  "filename": "live_realtime_demo.cnv",
+  "file_type": "CNV",
+  "total_records": 246,
+  "cruise": "unknown",
+  "ship": "unknown",
+  "station": "unknown",
+  "operator": "unknown",
+  "start_time": "Oct 08 2025 13:42:02",
+  "variables": 17,
+  "row_count": 246,
+  "quality_summary": {
+    "warnings": [
+      "par: 5 potential anomalies (>4.0 z-score)"
+    ],
+    "errors": [],
+    "duplicate_ratio": 0.0
+  }
+}

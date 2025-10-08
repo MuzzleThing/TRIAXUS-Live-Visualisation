@@ -1,0 +1,10 @@
+{
+  "source_file": "/var/folders/qw/0cp47dzn72n0hq5hfwh9tzjh0000gn/T/tmpsax37o8f/large_pipeline_test.cnv",
+  "total_records": 1000,
+  "row_count": 1000,
+  "quality_summary": {
+    "warnings": [],
+    "errors": [],
+    "duplicate_ratio": 0.0
+  }
+}

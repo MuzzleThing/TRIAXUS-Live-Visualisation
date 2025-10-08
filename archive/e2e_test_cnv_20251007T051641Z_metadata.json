@@ -1,0 +1,17 @@
+{
+  "filename": "e2e_test.cnv",
+  "file_type": "CNV",
+  "total_records": 3,
+  "cruise": "unknown",
+  "ship": "unknown",
+  "station": "unknown",
+  "operator": "unknown",
+  "start_time": null,
+  "variables": 7,
+  "row_count": 3,
+  "quality_summary": {
+    "warnings": [],
+    "errors": [],
+    "duplicate_ratio": 0.0
+  }
+}

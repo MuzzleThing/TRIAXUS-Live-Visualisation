@@ -37,6 +37,8 @@ NAME_LIST = [
     "CStarTr0: Beam Transmission, WET Labs C-Star [%]",
     "sal00: Salinity, Practical [PSU]",
     "sal11: Salinity, Practical, 2 [PSU]",
+    "fleco_afl: Fluorescence [mg/m³]",
+    "ph: pH",
     "scan: Scan Count",
     "timeS: Time, Elapsed [seconds]",
     "pumps: Pump Status",
@@ -60,6 +62,8 @@ SPAN_MIN = [
     84.6324,
     35.0889,
     35.0814,
+    0.1,        # fleco_afl: Fluorescence [mg/m³]
+    7.5,        # ph: pH
     1,
     0.0,
     1,
@@ -80,6 +84,8 @@ SPAN_MAX = [
     98.2135,
     35.8769,
     35.8393,
+    2.5,        # fleco_afl: Fluorescence [mg/m³]
+    8.2,        # ph: pH
     304611,
     12692.083,
     1,
@@ -749,6 +755,8 @@ def _fmt_row(values: List[float]) -> str:
         cstar,
         sal0,
         sal1,
+        fleco_afl,
+        ph,
         scan,
         times,
         pumps,
@@ -769,6 +777,8 @@ def _fmt_row(values: List[float]) -> str:
         f"{cstar:10.4f}",
         f"{sal0:10.4f}",
         f"{sal1:10.4f}",
+        f"{fleco_afl:10.3f}",
+        f"{ph:10.3f}",
         f"{int(scan):10d}",
         f"{times:10.3f}",
         f"{int(pumps):10d}",
@@ -988,6 +998,8 @@ class CNVSimulator:
         self._cstar = (SPAN_MIN[8] + SPAN_MAX[8]) / 2
         self._sal0 = (SPAN_MIN[9] + SPAN_MAX[9]) / 2
         self._sal1 = (SPAN_MIN[10] + SPAN_MAX[10]) / 2
+        self._fleco_afl = (SPAN_MIN[11] + SPAN_MAX[11]) / 2
+        self._ph = (SPAN_MIN[12] + SPAN_MAX[12]) / 2
 
         # Persist track defaults
         self._track_speed_knots = track_speed_knots
@@ -1070,6 +1082,8 @@ class CNVSimulator:
                 self._cstar = float(cols[8])
                 self._sal0 = float(cols[9])
                 self._sal1 = float(cols[10])
+                self._fleco_afl = float(cols[11]) if len(cols) > 11 else (SPAN_MIN[11] + SPAN_MAX[11]) / 2
+                self._ph = float(cols[12]) if len(cols) > 12 else (SPAN_MIN[12] + SPAN_MAX[12]) / 2
                 # Align track position with last known lat/lon if a track is active
                 if self._track is not None:
                     try:
@@ -1262,6 +1276,8 @@ class CNVSimulator:
         self._cstar = self._rng.step(self._cstar, SPAN_MIN[8], SPAN_MAX[8], 0.10)
         self._sal0 = self._rng.step(self._sal0, SPAN_MIN[9], SPAN_MAX[9], 0.001)
         self._sal1 = self._rng.step(self._sal1, SPAN_MIN[10], SPAN_MAX[10], 0.001)
+        self._fleco_afl = self._rng.step(self._fleco_afl, SPAN_MIN[11], SPAN_MAX[11], 0.01)
+        self._ph = self._rng.step(self._ph, SPAN_MIN[12], SPAN_MAX[12], 0.001)
 
         # Latitude/longitude: follow mission track if set, else drift slowly.
         if self._track is not None:
@@ -1283,6 +1299,8 @@ class CNVSimulator:
             self._cstar,
             self._sal0,
             self._sal1,
+            self._fleco_afl,
+            self._ph,
             float(self._scan),
             round(self._time_s, 3),
             float(self._pumps),

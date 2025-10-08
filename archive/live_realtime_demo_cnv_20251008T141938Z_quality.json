@@ -1,0 +1,232 @@
+{
+  "row_count": 6,
+  "duplicate_count": 0,
+  "duplicate_ratio": 0.0,
+  "warnings": [],
+  "errors": [
+    "fleco_afl: 6 values outside range [0, 5]",
+    "ph: 6 values outside range [7.0, 9.0]"
+  ],
+  "columns": {
+    "tv290c": {
+      "name": "tv290c",
+      "total": 6,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 16.8126,
+      "max_value": 17.0573,
+      "warnings": [],
+      "errors": []
+    },
+    "conductivity": {
+      "name": "conductivity",
+      "total": 6,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 4.541543,
+      "max_value": 4.55349,
+      "warnings": [],
+      "errors": []
+    },
+    "depth": {
+      "name": "depth",
+      "total": 6,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 144.258,
+      "max_value": 149.069,
+      "warnings": [],
+      "errors": []
+    },
+    "tv290c_2": {
+      "name": "tv290c_2",
+      "total": 6,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 17.0093,
+      "max_value": 17.2455,
+      "warnings": [],
+      "errors": []
+    },
+    "conductivity_2": {
+      "name": "conductivity_2",
+      "total": 6,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 4.538603,
+      "max_value": 4.551115,
+      "warnings": [],
+      "errors": []
+    },
+    "sbeox0mm_l": {
+      "name": "sbeox0mm_l",
+      "total": 6,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 6.485152,
+      "max_value": 6.8726080000000005,
+      "warnings": [],
+      "errors": []
+    },
+    "sbeox1mm_l": {
+      "name": "sbeox1mm_l",
+      "total": 6,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 6.216544,
+      "max_value": 6.686976,
+      "warnings": [],
+      "errors": []
+    },
+    "par": {
+      "name": "par",
+      "total": 6,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 1e-12,
+      "max_value": 4.3077e-06,
+      "warnings": [],
+      "errors": []
+    },
+    "cstar_tr0": {
+      "name": "cstar_tr0",
+      "total": 6,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 89.7655,
+      "max_value": 91.5779,
+      "warnings": [],
+      "errors": []
+    },
+    "sal00": {
+      "name": "sal00",
+      "total": 6,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 35.4804,
+      "max_value": 35.5035,
+      "warnings": [],
+      "errors": []
+    },
+    "sal11": {
+      "name": "sal11",
+      "total": 6,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 35.3332,
+      "max_value": 35.452,
+      "warnings": [],
+      "errors": []
+    },
+    "fleco_afl": {
+      "name": "fleco_afl",
+      "total": 6,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 6,
+      "anomaly_count": 0,
+      "min_value": 176.0,
+      "max_value": 2257.0,
+      "warnings": [],
+      "errors": [
+        "6 values outside range [0, 5]"
+      ]
+    },
+    "ph": {
+      "name": "ph",
+      "total": 6,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 6,
+      "anomaly_count": 0,
+      "min_value": 175.0,
+      "max_value": 2256.0,
+      "warnings": [],
+      "errors": [
+        "6 values outside range [7.0, 9.0]"
+      ]
+    },
+    "scan": {
+      "name": "scan",
+      "total": 6,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 1.0,
+      "max_value": 1.0,
+      "warnings": [],
+      "errors": []
+    },
+    "time_elapsed": {
+      "name": "time_elapsed",
+      "total": 6,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": -33.96495,
+      "max_value": -33.8763,
+      "warnings": [],
+      "errors": []
+    },
+    "pumps": {
+      "name": "pumps",
+      "total": 6,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 151.05705,
+      "max_value": 151.19743,
+      "warnings": [],
+      "errors": []
+    },
+    "latitude": {
+      "name": "latitude",
+      "total": 6,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 0.0,
+      "max_value": 0.0,
+      "warnings": [],
+      "errors": []
+    },
+    "time": {
+      "name": "time",
+      "total": 6,
+      "missing_count": 0,
+      "missing_ratio": 0.0,
+      "out_of_range_count": 0,
+      "anomaly_count": 0,
+      "min_value": 1.75993314103505e+18,
+      "max_value": 1.7599331411237e+18,
+      "warnings": [],
+      "errors": []
+    }
+  }
+}

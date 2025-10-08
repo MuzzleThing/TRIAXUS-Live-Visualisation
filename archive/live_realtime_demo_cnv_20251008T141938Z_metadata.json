@@ -1,0 +1,20 @@
+{
+  "filename": "live_realtime_demo.cnv",
+  "file_type": "CNV",
+  "total_records": 6,
+  "cruise": "unknown",
+  "ship": "unknown",
+  "station": "unknown",
+  "operator": "unknown",
+  "start_time": "Oct 08 2025 14:19:35",
+  "variables": 19,
+  "row_count": 6,
+  "quality_summary": {
+    "warnings": [],
+    "errors": [
+      "fleco_afl: 6 values outside range [0, 5]",
+      "ph: 6 values outside range [7.0, 9.0]"
+    ],
+    "duplicate_ratio": 0.0
+  }
+}
