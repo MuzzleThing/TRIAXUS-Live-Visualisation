@@ -10,7 +10,7 @@ A modern, configuration-driven visualization toolkit for oceanographic research.
 
 - **Four Plot Types**: time series, contour, depth profile, map trajectory
 - **Database Integration**: PostgreSQL support for data storage and retrieval
-- **Oceanographic Data**: Realistic oceanographic data with proper geographic coordinates
+- **Oceanographic Data**: Complete oceanographic data including Temperature, Salinity, Oxygen, Fluorescence, and pH with proper geographic coordinates
 - **Map Integration**: Mapbox styles with automatic offline fallbacks
 - **Professional Themes**: oceanographic (default), dark, default, high_contrast
 - **Real-time Visualization**: End-to-end real-time pipeline (simulator → processor → API → web dashboard)
@@ -56,8 +56,11 @@ http://127.0.0.1:8080/
 Notes:
 - Default refresh interval: 1 minute (configurable from the dashboard)
 - Time granularity options: 5m, 15m, 30m, 1h, 6h, 12h, 24h
+- Timezone support: Browser Local, UTC, Australia/Sydney, Asia/Shanghai, Australia/Perth
 - Data filtering uses UTC; display is in local time on the frontend
-- The oceanographic map is shown at the bottom; time series at the top
+- Supports all 5 oceanographic variables: Temperature, Salinity, Oxygen, Fluorescence, pH
+- Variable-based plot selection: View all variables or filter by specific variable
+- Three plot types per variable: Time Series, Depth Profile, and Contour plots
 
 Stop the pipeline (in the same activated venv):
 
@@ -152,12 +155,12 @@ See more details in `docs/CONFIGURATION_GUIDE.md`.
 # Basic plot generation
 python triaxus-plot time-series --output time_series.html
 python triaxus-plot contour --variable tv290c --output contour.html
-python triaxus-plot depth-profile --variables tv290c,sal00 --output depth_profile.html
+python triaxus-plot depth-profile --variables tv290c,sal00,sbeox0mm_l,fleco_afl,ph --output depth_profile.html
 python triaxus-plot map --output map.html
 
-# Regional survey examples
+# Regional survey examples with all variables
 python triaxus-plot map --title "Oceanographic Survey" --output survey_map.html
-python triaxus-plot time-series --variables tv290c,sal00 --title "Oceanographic Data" --output timeseries.html
+python triaxus-plot time-series --variables tv290c,sal00,sbeox0mm_l,fleco_afl,ph --title "Oceanographic Data" --output timeseries.html
 
 # Get help
 python triaxus-plot --help
@@ -188,14 +191,14 @@ else:
     # Option 2: Generate sample data
     data = create_plot_test_data(hours=2.0)
 
-# Create plots programmatically
-time_series_html = viz.create_plot("time_series", data, variables=["tv290c", "sal00"])
+# Create plots programmatically with all variables
+time_series_html = viz.create_plot("time_series", data, variables=["tv290c", "sal00", "sbeox0mm_l", "fleco_afl", "ph"])
 contour_html = viz.create_plot("contour", data, variable="tv290c")
-depth_html = viz.create_plot("depth_profile", data, variables=["tv290c", "sal00"])
+depth_html = viz.create_plot("depth_profile", data, variables=["tv290c", "sal00", "sbeox0mm_l", "fleco_afl", "ph"])
 map_html = viz.create_plot("map", data, title="Oceanographic Survey")
 
 # Get Plotly Figure for custom modifications
-figure = viz.create_plot_figure("time_series", data, variables=["tv290c"])
+figure = viz.create_plot_figure("time_series", data, variables=["tv290c", "fleco_afl", "ph"])
 figure.update_layout(title="Custom Oceanographic Analysis")
 figure.show()
 ```
@@ -209,6 +212,23 @@ For detailed Python API examples and advanced usage, see [API_USAGE.md](docs/API
 ./triaxus-plot time-series --help
 ```
 
+
+## Oceanographic Variables
+
+The system supports five complete oceanographic variables:
+
+| Variable | Field Name | Description | Units |
+|----------|------------|-------------|-------|
+| Temperature | `tv290c` | Water temperature | °C |
+| Salinity | `sal00` | Practical salinity | PSU |
+| Oxygen | `sbeox0mm_l` | Dissolved oxygen | mg/L |
+| Fluorescence | `fleco_afl` | Chlorophyll fluorescence | mg/m³ |
+| pH | `ph` | Water acidity | pH units |
+
+All variables support the three main plot types:
+- **Time Series**: Temporal evolution of each variable
+- **Depth Profile**: Vertical distribution vs depth
+- **Contour**: Spatial distribution with depth contours
 
 ## Themes
 
@@ -255,7 +275,7 @@ map_plot:
 
 - Contour interpolation failed: This is expected sometimes; the plot will fall back to a scatter representation and still be generated.
 - Mapbox token not provided: The CLI will warn and use offline/scattergeo fallback.
-- Variable names: Use existing columns from the generator, e.g., `tv290c`, `sal00`, `sbeox0mm_l`, `fleco_afl`, `ph`.
+- Variable names: Use existing columns from the generator, e.g., `tv290c` (Temperature), `sal00` (Salinity), `sbeox0mm_l` (Oxygen), `fleco_afl` (Fluorescence), `ph` (pH).
 - Custom size not applying (maps): Passing `--width`/`--height` works; the logic prioritizes CLI dimensions over defaults.
 - Real-time pipeline shows no data: ensure simulator, processor, and API server are running; try stopping, deleting the realtime state file, and starting again.
 - Dashboard manual refresh not working: browser cache can interfere; the dashboard uses `no-cache` headers and logs refresh events to the console.
@@ -363,27 +383,40 @@ triaxus-plotter/
 ├── realtime/                              # Real-time web dashboard and API server
 │   ├── dashboard.html                     # Dashboard (served at /)
 │   ├── dashboard.css                      # Dashboard styles
-│   ├── dashboard.js                       # Dashboard logic
+│   ├── dashboard.js                       # Dashboard main entry point
+│   ├── js/                                # Modular JavaScript components
+│   │   ├── api.js                         # API communication module
+│   │   ├── timezone.js                    # Timezone handling module
+│   │   ├── data-filter.js                 # Data filtering module
+│   │   ├── plots.js                       # Plotting logic module
+│   │   └── ui-controls.js                 # UI controls module
 │   └── realtime_api_server.py             # HTTP server for dashboard and data
 ├── scripts/                               # Helper scripts
 │   ├── start_realtime_pipeline.py         # One-click start for realtime pipeline
-│   └── stop_realtime_pipeline.py          # One-click stop for realtime pipeline
+│   ├── stop_realtime_pipeline.py          # One-click stop for realtime pipeline
+│   ├── setup_environment.sh               # Environment setup script
+│   ├── run_all_tests.sh                   # Run all tests script
+│   ├── cleanup_environment.sh             # Cleanup script
+│   └── quick_demo.sh                      # Quick demo script
 ├── logs/                                  # System log files
 │   ├── cnv_realtime_processing.log        # Real-time processor logs
 │   ├── cnv_batch_processing.log           # Batch processor logs
 │   ├── api_server.log                     # API server logs
 │   └── cnv_watcher.log                    # Watcher service logs
+├── live_data_feed_simulation/              # Data simulation and generation
+│   └── simulation.py                      # CNV file live-feed simulator with 5 variables
+├── testdataQC/                            # Test data directory
 └── triaxus-plot                           # CLI entry point (executable)
 ```
 
 ## Quick Verification
 
 ```bash
-# Minimal end-to-end checks
-python triaxus-plot time-series --output demo_time_series.html
-python triaxus-plot contour --variable tv290c --output demo_contour.html
+# Minimal end-to-end checks with all variables
+python triaxus-plot time-series --variables tv290c,sal00,sbeox0mm_l,fleco_afl,ph --output demo_time_series.html
+python triaxus-plot contour --variable fleco_afl --output demo_contour.html
 python triaxus-plot map --output demo_map.html
-python triaxus-plot depth-profile --variables tv290c,sal00 --output demo_depth.html
+python triaxus-plot depth-profile --variables tv290c,sal00,sbeox0mm_l,fleco_afl,ph --output demo_depth.html
 ```
 
 ## Tests
@@ -422,6 +455,7 @@ python tests/unit/test_models_and_mappers.py          # Models/mappers tests
 - **Oceanographic Data**: Map tests use realistic oceanographic data
 - **Database Integration**: Full database functionality testing
 - **All Plot Types**: Complete coverage of time series, contour, depth profile, and map plots
+- **All Variables**: Full support for Temperature, Salinity, Oxygen, Fluorescence, and pH
 - **Theme Testing**: All themes (oceanographic, dark, default, high_contrast)
 - **Data Quality**: Various data scenarios and edge cases
 - **Output Validation**: All HTML files generated in organized structure
